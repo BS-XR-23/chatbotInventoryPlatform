@@ -16,6 +16,7 @@ dependencies = [
     "fastapi-limiter>=0.1.6",
     "httpx>=0.28.1",
     "langchain>=1.1.0",
+    "langchain-community>=0.4.1",
     "langchain-core>=1.1.0",
     "loguru>=0.7.3",
     "openai>=2.8.1",
