@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from chatbot.chatbotInventoryPlatform.backend.core.enums import SenderType
+from backend.core.enums import SenderType
 
 class ConversationBase(BaseModel):
     session_id: str
@@ -10,6 +10,7 @@ class ConversationBase(BaseModel):
     user_id: Optional[int] = None
     chatbot_id: Optional[int] = None
     token_count: int = 0
+    timestamp: datetime
 
 class ConversationCreate(ConversationBase):
     pass
@@ -20,7 +21,6 @@ class ConversationUpdate(BaseModel):
 
 class ConversationRead(ConversationBase):
     id: int
-    timestamp: datetime
 
     class Config:
         orm_mode = True

@@ -1,8 +1,9 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from chatbot.chatbotInventoryPlatform.backend.core.enums import UserRole
+from backend.core.enums import UserRole
 
 class UserBase(BaseModel):
+    name: str
     email: EmailStr
     role: UserRole = UserRole.external
     is_active: bool = True
@@ -12,6 +13,7 @@ class UserCreate(UserBase):
     password: str  
 
 class UserUpdate(BaseModel):
+    name: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     role: Optional[UserRole] = None

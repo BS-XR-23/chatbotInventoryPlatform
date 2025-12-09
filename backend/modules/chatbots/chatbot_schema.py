@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from chatbot.chatbotInventoryPlatform.backend.core.enums import ChatbotMode
+from backend.core.enums import ChatbotMode
 
 class ChatbotBase(BaseModel):
     vendor_id: int
@@ -8,6 +8,7 @@ class ChatbotBase(BaseModel):
     description: Optional[str] = None
     system_prompt: str
     llm_id: Optional[int] = None
+    api_key_id: Optional[int] = None
     vector_db: str
     mode: ChatbotMode = ChatbotMode.private
     is_active: bool = True
@@ -18,10 +19,11 @@ class ChatbotCreate(ChatbotBase):
     pass
 
 class ChatbotUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] =None
     description: Optional[str] = None
     system_prompt: Optional[str] = None
     llm_id: Optional[int] = None
+    api_key_id: Optional[int] = None
     vector_db: Optional[str] = None
     mode: Optional[ChatbotMode] = None
     is_active: Optional[bool] = None

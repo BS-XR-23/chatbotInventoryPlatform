@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 from backend.old_models import user
 from backend.db.database import get_db
 from backend.core.config import settings
+from backend.modules.users.user_model import User 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/user/token")
 
 
 def get_password_hash(password: str):
-    truncated_password = password[:72]  # bcrypt limitation
+    truncated_password = password[:72] 
     return pwd_context.hash(truncated_password)
 
 
@@ -24,7 +25,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_user(db: Session, email: str):
-    return db.query(user.User).filter(user.User.email == email).first()
+    return db.query(User).filter(User.email == email).first()
 
 
 def authenticate_user(db: Session, email: str, password: str):

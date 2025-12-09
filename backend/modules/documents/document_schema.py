@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from chatbot.chatbotInventoryPlatform.backend.core.enums import DocumentStatus
+from backend.core.enums import DocumentStatus
 
 class DocumentBase(BaseModel):
     vendor_id: int
@@ -15,7 +15,7 @@ class DocumentCreate(BaseModel):
     title: str
     tags: str
     file_path: str
-    summary: Optional[str] = ""   # can be populated after ingestion
+    summary: Optional[str] = ""  
     status: DocumentStatus = DocumentStatus.processing
 
 class DocumentUpdate(BaseModel):

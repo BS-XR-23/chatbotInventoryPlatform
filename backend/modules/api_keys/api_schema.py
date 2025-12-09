@@ -3,7 +3,9 @@ from typing import Optional
 from chatbot.chatbotInventoryPlatform.backend.core.enums import APIKeyStatus
 
 class APIKeyBase(BaseModel):
+    name: str
     vendor_id: int
+    key: str
     chatbot_id: Optional[int] = None
     status: APIKeyStatus = APIKeyStatus.active
 
@@ -16,9 +18,7 @@ class APIKeyUpdate(BaseModel):
     chatbot_id: Optional[int] = None
 
 class APIKeyRead(APIKeyBase):
-    id: int
-    key: str  
-
+    id: int 
     class Config:
         orm_mode = True
 

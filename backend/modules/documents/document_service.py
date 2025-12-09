@@ -1,11 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.documents.document_model import Document
-from chatbot.chatbotInventoryPlatform.backend.modules.documents.document_schema import DocumentCreate
+from backend.modules.documents.document_model import Document
+from backend.modules.documents.document_schema import DocumentCreate
 
-# -------------------------
-# Document CRUD
-# -------------------------
 
 def create_document(db: Session, document_data: DocumentCreate) -> Document:
     new_doc = Document(**document_data.dict())
@@ -37,3 +34,4 @@ def delete_document(db: Session, document_id: int) -> bool:
     db.delete(document)
     db.commit()
     return True
+

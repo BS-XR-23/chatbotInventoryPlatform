@@ -1,11 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.llms.llm_model import LLM
-from chatbot.chatbotInventoryPlatform.backend.modules.llms.llm_schema import LLMCreate
+from backend.modules.llms.llm_model import LLM
+from backend.modules.llms.llm_schema import LLMCreate
 
-# -------------------------
-# LLM CRUD
-# -------------------------
 
 def create_llm(db: Session, llm_data: LLMCreate) -> LLM:
     new_llm = LLM(**llm_data.dict())

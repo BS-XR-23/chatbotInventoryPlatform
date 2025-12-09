@@ -1,20 +1,16 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.users.user_model import User
-from chatbot.chatbotInventoryPlatform.backend.modules.users.user_schema import UserCreate
-from backend.core import auth_user
+from backend.modules.users.user_model import User
+from backend.modules.users.user_schema import UserCreate
+from backend.modules.auth import auth_user
 
-# -------------------------
-# Users CRUD Operations
-# -------------------------
 
 def create_user(db: Session, user_data: UserCreate) -> User:
-    # Check if email already exists
+ 
     db_user = db.query(User).filter(User.email == user_data.email).first()
     if db_user:
-        return None  # Handle in routes
+        return None  
 
-    # Hash password
     hashed_password = auth_user.get_password_hash(user_data.password)
 
     new_user = User(
