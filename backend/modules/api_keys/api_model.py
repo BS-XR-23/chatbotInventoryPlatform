@@ -6,10 +6,11 @@ from chatbot.chatbotInventoryPlatform.backend.core.enums import APIKeyStatus
 class APIKey(Base):
     __tablename__ = "api_keys"
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=False)
     chatbot_id = Column(Integer, ForeignKey("chatbots.id"), nullable=True)
     key = Column(String, unique=True, nullable=False)
     status = Column(Enum(APIKeyStatus), default=APIKeyStatus.active)
 
     vendor = relationship("Vendor", back_populates="api_keys")
-    chatbot = relationship("Chatbot", back_populates="api_keys")
+    chatbots = relationship("Chatbot", back_populates="api_key")

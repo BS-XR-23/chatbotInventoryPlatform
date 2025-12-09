@@ -1,18 +1,18 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.conversations.conversation_model import Conversation
-from chatbot.chatbotInventoryPlatform.backend.modules.conversations.conversation_schema import ConversationCreate
+from backend.modules.conversations.conversation_model import Conversation
+from backend.modules.conversations.conversation_schema import ConversationCreate
 
 # -------------------------
 # Conversation CRUD
 # -------------------------
 
-def create_conversation(db: Session, conv_data: ConversationCreate) -> Conversation:
-    new_conv = Conversation(**conv_data.dict())
-    db.add(new_conv)
-    db.commit()
-    db.refresh(new_conv)
-    return new_conv
+# def create_conversation(db: Session, conv_data: ConversationCreate) -> Conversation:
+#     new_conv = Conversation(**conv_data.dict())
+#     db.add(new_conv)
+#     db.commit()
+#     db.refresh(new_conv)
+#     return new_conv
 
 def get_conversations(db: Session) -> List[Conversation]:
     return db.query(Conversation).all()

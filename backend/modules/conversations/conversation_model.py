@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, Text
 from sqlalchemy.orm import relationship
 from backend.db.database import Base
-from chatbot.chatbotInventoryPlatform.backend.core.enums import SenderType
+from backend.core.enums import SenderType
 from datetime import datetime
 
 

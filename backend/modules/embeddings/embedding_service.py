@@ -1,11 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.llms.llm_model import Embedding
-from chatbot.chatbotInventoryPlatform.backend.modules.llms.llm_schema import EmbeddingCreate
+from backend.modules.embeddings.embedding_model import Embedding
+from backend.modules.embeddings.embedding_schema import EmbeddingCreate
 
-# -------------------------
-# Embedding CRUD
-# -------------------------
 
 def create_embedding(db: Session, embed_data: EmbeddingCreate) -> Embedding:
     new_embed = Embedding(**embed_data.dict())

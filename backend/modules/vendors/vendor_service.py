@@ -1,12 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from chatbot.chatbotInventoryPlatform.backend.modules.vendors.vendor_model import Vendor
-from chatbot.chatbotInventoryPlatform.backend.modules.vendors.vendor_schema import VendorCreate, VendorUpdate
-from backend.core import auth_vendor
-
-# -------------------------
-# Vendors CRUD Operations
-# -------------------------
+from backend.modules.vendors.vendor_model import Vendor
+from backend.modules.vendors.vendor_schema import VendorCreate, VendorUpdate
+from backend.modules.auth import auth_vendor
 
 def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
     db_vendor = db.query(Vendor).filter(Vendor.email == vendor_data.email).first()

@@ -1,4 +1,5 @@
 import enum
+from sqlalchemy import Enum as SQLEnum
 
 class UserRole(str, enum.Enum):
     admin = "admin"
@@ -27,3 +28,13 @@ class ChatbotMode(str, enum.Enum):
 class APIKeyStatus(str, enum.Enum):
     active = "active"
     inactive = "inactive"
+
+class LLMProvider(str, enum.Enum):
+    openai = "openai"
+    anthropic = "anthropic"
+    cohere = "cohere"
+    huggingface = "huggingface"
+    google = "google"
+    azure = "azure"
+    local = "local"
+    ollama="ollama"

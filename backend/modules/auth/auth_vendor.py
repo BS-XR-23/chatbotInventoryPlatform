@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from chatbot.chatbotInventoryPlatform.backend.modules.vendors import vendor_model
+from backend.modules.vendors import vendor_model
 from backend.db.database import get_db
 from backend.core.config import settings
 

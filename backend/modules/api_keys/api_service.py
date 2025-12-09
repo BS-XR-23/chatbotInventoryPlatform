@@ -1,11 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.models.api_keys import APIKey
-from backend.schemas.api_keys import APIKeyCreate
-
-# -------------------------
-# CRUD Operations
-# -------------------------
+from backend.modules.api_keys.api_model import APIKey
+from backend.modules.api_keys.api_schema import APIKeyCreate
 
 def create_api_key(db: Session, api_key_data: APIKeyCreate) -> APIKey:
     new_key = APIKey(**api_key_data.dict())

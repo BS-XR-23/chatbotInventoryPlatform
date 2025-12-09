@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, Enum, JSON
 from sqlalchemy.orm import relationship
 from backend.db.database import Base
-from chatbot.chatbotInventoryPlatform.backend.core.enums import DocumentStatus
+from backend.core.enums import DocumentStatus
 
 class Document(Base):
     __tablename__ = "documents"
