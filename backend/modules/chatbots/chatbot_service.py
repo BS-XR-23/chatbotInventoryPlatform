@@ -98,7 +98,6 @@ def handle_conversation_multiturn(
         model_name,
         temperature=0.7,   
         max_tokens=chatbot.token_limit,
-        context_window=chatbot.context_limit
     )
 
     history = (
