@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.db.database import get_db
-from backend.modules.llms.llm_schema import LLMCreate, LLMRead
-from backend.modules.llms import llm_service
+from db.database import get_db
+from modules.llms.llm_schema import LLMCreate, LLMRead
+from modules.llms import llm_service
 
-router = APIRouter(prefix="/llms", tags=["LLMs"])
+router = APIRouter(tags=["LLMs"])
 
 @router.post("/", response_model=LLMRead)
 def create_llm(llm: LLMCreate, db: Session = Depends(get_db)):

@@ -1,5 +1,4 @@
 import enum
-from sqlalchemy import Enum as SQLEnum
 
 class UserRole(str, enum.Enum):
     admin = "admin"
@@ -18,7 +17,7 @@ class SenderType(str, enum.Enum):
 
 class DocumentStatus(str, enum.Enum):
     processing = "processing"
-    ready = "ready"
+    ready = "success"
     failed = "failed"
 
 class ChatbotMode(str, enum.Enum):
@@ -38,3 +37,10 @@ class LLMProvider(str, enum.Enum):
     azure = "azure"
     local = "local"
     ollama="ollama"
+
+class EmbeddingProvider(str, enum.Enum):
+    openai = "openai"
+    cohere = "cohere"
+    huggingface = "huggingface"
+    ollama = "ollama"
+    local = "local"

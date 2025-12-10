@@ -1,7 +1,7 @@
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import ChatPromptTemplate
-from chatbot.chatbotInventoryPlatform.backend.modules.rag import rag_service
-from backend.core.config import settings
+from modules.rag import rag_service
+from core.config import settings
 
 
 GOOGLE_API_KEY = settings.GOOGLE_API_KEY

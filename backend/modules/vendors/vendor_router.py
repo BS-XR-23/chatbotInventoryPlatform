@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.db.database import get_db
-from backend.modules.vendors.vendor_schema import VendorCreate, VendorRead, VendorUpdate
-from backend.modules.vendors import vendor_service
-from backend.modules.vendors.vendor_model import Vendor
-from backend.modules.auth import auth_vendor
+from db.database import get_db
+from modules.vendors.vendor_schema import VendorCreate, VendorRead, VendorUpdate
+from modules.vendors import vendor_service
+from modules.vendors.vendor_model import Vendor
+from modules.users.user_schema import UserRead
+from modules.users import user_service
+from modules.auth import auth_vendor
 
-router = APIRouter(prefix="/vendors", tags=["Vendors"])
+router = APIRouter(tags=["Vendors"])
 
 @router.post("/create", response_model=VendorRead)
 def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
@@ -19,6 +21,13 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
 @router.get("/all-vendors", response_model=List[VendorRead])
 def list_vendors(db: Session = Depends(get_db)):
     return vendor_service.list_vendors(db)
+
+@router.get("/", response_model=List[UserRead])
+def get_users(
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(auth_vendor.get_current_vendor)
+):
+    return user_service.get_users(db)
 
 @router.get("/{vendor_id}", response_model=VendorRead)
 def get_vendor(vendor_id: int, db: Session = Depends(get_db)):

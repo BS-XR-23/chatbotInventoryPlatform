@@ -1,27 +1,19 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 from typing import Optional
+from core.enums import EmbeddingProvider
 
 class EmbeddingBase(BaseModel):
-    name: str
     model_name: str
-    @validator("name")
-    def name_must_be_lowercase(cls, v: str) -> str:
-        if not v:
-            raise ValueError("name cannot be empty")
-        return v.lower()
+    provider: EmbeddingProvider
+    path: Optional[str] = None  
 
 class EmbeddingCreate(EmbeddingBase):
     pass
 
 class EmbeddingUpdate(BaseModel):
-    name: Optional[str] = None
     model_name: Optional[str] = None
-
-    @validator("name")
-    def name_must_be_lowercase(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            return v.lower()
-        return v
+    provider: Optional[EmbeddingProvider] = None
+    path: Optional[str] = None
 
 class EmbeddingRead(EmbeddingBase):
     id: int

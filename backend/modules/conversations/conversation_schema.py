@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from backend.core.enums import SenderType
+from core.enums import SenderType
 
 class ConversationBase(BaseModel):
     session_id: str

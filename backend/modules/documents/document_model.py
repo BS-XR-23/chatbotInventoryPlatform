@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, Enum, JSON
 from sqlalchemy.orm import relationship
-from backend.db.database import Base
-from backend.core.enums import DocumentStatus
+from db.database import Base
+from core.enums import DocumentStatus
 
 class Document(Base):
     __tablename__ = "documents"
@@ -17,5 +17,6 @@ class Document(Base):
 
     vendor = relationship("Vendor", back_populates="documents")
     chatbot = relationship("Chatbot", back_populates="documents")
+
 
 
