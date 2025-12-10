@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.modules.llms.llm_model import LLM
-from backend.modules.llms.llm_schema import LLMCreate
+from modules.llms.llm_model import LLM
+from modules.llms.llm_schema import LLMCreate
 
 
 def create_llm(db: Session, llm_data: LLMCreate) -> LLM:

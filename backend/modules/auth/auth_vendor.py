@@ -5,12 +5,12 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from backend.modules.vendors import vendor_model
-from backend.db.database import get_db
-from backend.core.config import settings
+from modules.vendors import vendor_model
+from db.database import get_db
+from core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/admin/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/vendor/token")
 
 def get_password_hash(password: str):
     truncated_password = password[:72]

@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.modules.users.user_model import User
-from backend.modules.users.user_schema import UserCreate
-from backend.modules.auth import auth_user
+from modules.users.user_model import User
+from modules.users.user_schema import UserCreate
+from modules.auth import auth_user
 
 
 def create_user(db: Session, user_data: UserCreate) -> User:
@@ -15,7 +15,7 @@ def create_user(db: Session, user_data: UserCreate) -> User:
 
     new_user = User(
         **user_data.dict(exclude={"password"}),
-        password_hash=hashed_password
+        hashed_password=hashed_password
     )
 
     db.add(new_user)

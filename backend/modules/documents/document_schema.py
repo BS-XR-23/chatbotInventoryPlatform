@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from backend.core.enums import DocumentStatus
+from core.enums import DocumentStatus
 
 class DocumentBase(BaseModel):
     vendor_id: int

@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.db.database import get_db
-from backend.modules.embeddings.embedding_schema import EmbeddingCreate, EmbeddingRead
-from backend.modules.embeddings import embedding_service
+from db.database import get_db
+from modules.embeddings.embedding_schema import EmbeddingCreate, EmbeddingRead
+from modules.embeddings import embedding_service
 
-router = APIRouter(prefix="/embeddings", tags=["Embeddings"])
+router = APIRouter(tags=["Embeddings"])
 
 @router.post("/", response_model=EmbeddingRead)
-def create_embedding(embed: EmbeddingCreate, db: Session = Depends(get_db)):
-    return embedding_service.create_embedding(db, embed)
+def add_embedding(embed: EmbeddingCreate, db: Session = Depends(get_db)):
+    return embedding_service.add_embedding(db, embed)
 
 @router.get("/", response_model=List[EmbeddingRead])
 def get_embeddings(db: Session = Depends(get_db)):

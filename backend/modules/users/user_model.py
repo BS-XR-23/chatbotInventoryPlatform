@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum
 from sqlalchemy.orm import relationship
-from backend.db.database import Base
-from backend.core.enums import UserRole
+from db.database import Base
+from core.enums import UserRole
 
 class User(Base):
     __tablename__ = "users"
@@ -10,7 +10,7 @@ class User(Base):
     name = Column(String, nullable=False)
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=True)
     email = Column(String, unique=True, nullable=False, index=True)
-    password_hash = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.external)
     is_active = Column(Boolean, default=True)
 

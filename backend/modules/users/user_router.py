@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.db.database import get_db
-from backend.modules.users.user_schema import UserCreate, UserRead
-from backend.modules.users import user_service
-from backend.modules.users.user_model import User
-from backend.modules.auth import auth_user, auth_vendor
-from backend.modules.vendors.vendor_model import Vendor
+from db.database import get_db
+from modules.users.user_schema import UserCreate, UserRead
+from modules.users import user_service
+from modules.users.user_model import User
+from modules.auth import auth_user, auth_vendor
+from modules.vendors.vendor_model import Vendor
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(tags=["Users"])
 
 @router.post("/create", response_model=UserRead)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -16,13 +16,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if not new_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     return new_user
-
-@router.get("/", response_model=List[UserRead])
-def get_users(
-    db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(auth_vendor.get_current_vendor)
-):
-    return user_service.get_users(db)
 
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(

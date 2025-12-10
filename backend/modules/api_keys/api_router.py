@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from backend.db.database import get_db
-from backend.modules.api_keys import api_service, api_schema
+from db.database import get_db
+from modules.api_keys import api_service, api_schema
 
 
-router = APIRouter(prefix="/api-keys", tags=["API Keys"])
+router = APIRouter(tags=["API Keys"])
 
 # Create API Key
 @router.post("/", response_model=api_schema.APIKeyRead)

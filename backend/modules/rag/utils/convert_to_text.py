@@ -1,13 +1,14 @@
-from langchain.schema import Document
+from langchain_core.documents import Document
 from PyPDF2 import PdfReader
 import docx
-import textract
+import mammoth  # <-- replaces textract for .doc files
 from bs4 import BeautifulSoup
 from io import BytesIO
 
 # -----------------------
 # File converters (in-memory)
 # -----------------------
+
 def pdf_to_text(file_content):
     reader = PdfReader(file_content if isinstance(file_content, BytesIO) else BytesIO(file_content))
     text = ""
@@ -17,12 +18,20 @@ def pdf_to_text(file_content):
             text += page_text + "\n"
     return text
 
+
 def docx_to_text(file_content):
     doc = docx.Document(file_content if isinstance(file_content, BytesIO) else BytesIO(file_content))
     return "\n".join([para.text for para in doc.paragraphs])
 
+
 def doc_to_text(file_content):
-    return textract.process(BytesIO(file_content) if not isinstance(file_content, (bytes, BytesIO)) else file_content).decode("utf-8", errors="ignore")
+    """
+    Convert .doc using mammoth (safe alternative to textract).
+    """
+    buffer = file_content if isinstance(file_content, BytesIO) else BytesIO(file_content)
+    result = mammoth.extract_raw_text(buffer)
+    return result.value
+
 
 def txt_to_text(file_content):
     if isinstance(file_content, bytes):
@@ -31,6 +40,7 @@ def txt_to_text(file_content):
         return file_content.read().decode("utf-8", errors="ignore")
     else:
         return str(file_content)
+
 
 def html_to_text(file_content):
     if isinstance(file_content, bytes):
@@ -62,7 +72,7 @@ def convert_documents_to_langchain_docs(document_objs: list) -> list[Document]:
             elif ext == "docx":
                 text = docx_to_text(file_content)
             elif ext == "doc":
-                text = doc_to_text(file_content)
+                text = doc_to_text(file_content)  # replaced textract
             elif ext == "txt":
                 text = txt_to_text(file_content)
             elif ext in ["html", "htm"]:
@@ -71,6 +81,7 @@ def convert_documents_to_langchain_docs(document_objs: list) -> list[Document]:
                 raise ValueError(f"Unsupported file type: {ext}")
 
             lc_docs.append(Document(page_content=text, metadata={"source": doc_obj.filename}))
+
         except Exception as e:
             print(f"Skipping {doc_obj.filename} due to error: {e}")
 

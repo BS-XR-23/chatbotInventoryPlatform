@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.modules.vendors.vendor_model import Vendor
-from backend.modules.vendors.vendor_schema import VendorCreate, VendorUpdate
-from backend.modules.auth import auth_vendor
+from modules.vendors.vendor_model import Vendor
+from modules.vendors.vendor_schema import VendorCreate, VendorUpdate
+from modules.auth import auth_vendor
 
 def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
     db_vendor = db.query(Vendor).filter(Vendor.email == vendor_data.email).first()
@@ -13,13 +13,14 @@ def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
 
     new_vendor = Vendor(
         **vendor_data.dict(exclude={"password"}),
-        hashed_password=hashed_password
+        hashed_password=hashed_password  # <- match your model column
     )
 
     db.add(new_vendor)
     db.commit()
     db.refresh(new_vendor)
     return new_vendor
+
 
 def list_vendors(db: Session) -> List[Vendor]:
     return db.query(Vendor).all()

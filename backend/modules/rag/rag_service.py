@@ -4,26 +4,21 @@ from shutil import rmtree
 from pathlib import Path
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
-from backend.modules.chatbots.chatbot_model import Chatbot
-from backend.modules.llms.llm_model import LLM
-from backend.modules.embeddings.embedding_model import Embedding
-from backend.modules.rag.utils.convert_to_text import convert_documents_to_langchain_docs
-
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma, Qdrant, Pinecone, Weaviate, PGVector
-
 import qdrant_client
 import pinecone
 import weaviate
+from modules.chatbots.chatbot_model import Chatbot
+from modules.llms.llm_model import LLM
+from modules.embeddings.embedding_model import Embedding
+from modules.rag.utils.convert_to_text import convert_documents_to_langchain_docs
 
 
 def embedd_document(db: Session, chatbot_id: int, embedd_obj: Embedding, document_obj: list):
-    """
-    Embeds a list of documents for a specific chatbot into its vector DB.
-    """
+    
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
         Chatbot.is_active == True
@@ -40,6 +35,8 @@ def embedd_document(db: Session, chatbot_id: int, embedd_obj: Embedding, documen
 
     vector_db = chatbot.vector_db.lower()
 
+
+    # A) Chroma
     if vector_db.startswith("chroma://") or os.path.isdir(vector_db):
         persist_dir = vector_db.replace("chroma://", "")
         if os.path.exists(persist_dir):

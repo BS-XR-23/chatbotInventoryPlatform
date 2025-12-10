@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.modules.embeddings.embedding_model import Embedding
-from backend.modules.embeddings.embedding_schema import EmbeddingCreate
+from modules.embeddings.embedding_model import Embedding
+from modules.embeddings.embedding_schema import EmbeddingCreate
 
 
-def create_embedding(db: Session, embed_data: EmbeddingCreate) -> Embedding:
+def add_embedding(db: Session, embed_data: EmbeddingCreate) -> Embedding:
     new_embed = Embedding(**embed_data.dict())
     db.add(new_embed)
     db.commit()

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
-from backend.modules.conversations.conversation_model import Conversation
-from backend.modules.conversations.conversation_schema import ConversationCreate
+from modules.conversations.conversation_model import Conversation
+from modules.conversations.conversation_schema import ConversationCreate
 
 # -------------------------
 # Conversation CRUD
