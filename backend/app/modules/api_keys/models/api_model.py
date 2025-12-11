@@ -9,9 +9,11 @@ class APIKey(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     vendor_id = Column(Integer, ForeignKey("vendors.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     key = Column(String, unique=True, nullable=False)
     status = Column(Enum(APIKeyStatus), default=APIKeyStatus.active)
 
     vendor = relationship("Vendor", back_populates="api_keys")
+    user = relationship("User", back_populates="api_keys")
     chatbots = relationship("Chatbot", back_populates="api_key")
 

@@ -5,6 +5,7 @@ from core.enums import APIKeyStatus
 class APIKeyBase(BaseModel):
     name: str
     vendor_id: int
+    user_id: int
     key: str
     status: APIKeyStatus = APIKeyStatus.active
 
