@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, HTTPException
 from typing import List
 from modules.api_keys.models.api_model import APIKey
 from modules.api_keys.schemas.api_schema import APIKeyCreate
@@ -11,12 +11,18 @@ def create_api_key(db: Session, api_key_data: APIKeyCreate) -> APIKey:
     return new_key
 
 
-def get_api_keys(db: Session) -> List[APIKey]:
-    return db.query(APIKey).all()
+def get_api_keys(db: Session, user_id: int) -> list[APIKey]:
+    keys = db.query(APIKey).filter_by(user_id=user_id).all()
+    if not keys:
+        raise HTTPException(status_code=404, detail="No API keys found for this user")
+    return keys
 
 
 def get_api_key(db: Session, key_id: int) -> APIKey:
-    return db.query(APIKey).get(key_id)
+    api_key = db.query(APIKey).get(key_id)
+    if not api_key:
+        raise HTTPException(status_code=404, detail=f"API key with id {key_id} not found")
+    return api_key
 
 
 def update_api_key(db: Session, key_id: int, api_key_data: APIKeyCreate) -> APIKey:
