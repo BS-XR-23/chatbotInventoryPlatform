@@ -1,5 +1,5 @@
 # modules/llms/llm_schema.py
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from modules.embeddings.schemas.embedding_schema import EmbeddingRead
 
@@ -32,8 +32,7 @@ class LLMRead(LLMBase):
     id: int
     embedding: Optional[EmbeddingRead] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 

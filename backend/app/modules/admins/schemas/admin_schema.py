@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
 
 class AdminBase(BaseModel):
@@ -19,5 +19,4 @@ class AdminChangePassword(BaseModel):
 class AdminRead(AdminBase):
     id: int
    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
