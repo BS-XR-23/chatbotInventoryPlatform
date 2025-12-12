@@ -5,13 +5,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma, Qdrant, Pinecone, Weaviate, PGVector
 import os
-from shutil import rmtree
 from pathlib import Path
 import qdrant_client
 import pinecone
 import weaviate
 from modules.chatbots.models.chatbot_model import Chatbot
-from modules.llms.models.llm_model import LLM
 from modules.embeddings.models.embedding_model import Embedding
 from utils.convert_to_txt import convert_to_txt
 
@@ -125,30 +123,29 @@ def load_vectorstore(vector_db: str, embeddings):
     vector_db = vector_db.lower()
 
     if vector_db.startswith("chroma://") or os.path.isdir(vector_db):
+        
         persist_dir = vector_db.replace("chroma://", "")
-        from langchain_community.vectorstores import Chroma
         return Chroma(persist_directory=persist_dir, embedding_function=embeddings)
 
     elif vector_db.startswith("pinecone://"):
+        
         index_name = vector_db.replace("pinecone://", "")
-        from langchain_community.vectorstores import Pinecone
         return Pinecone(index_name=index_name, embedding=embeddings)
 
     elif vector_db.startswith("qdrant://"):
+        
         url = vector_db.replace("qdrant://", "")
-        from langchain_community.vectorstores import Qdrant
         return Qdrant(url=url, embedding=embeddings)
 
     elif vector_db.startswith("weaviate://"):
+        
         url = vector_db.replace("weaviate://", "")
-        import weaviate
-        from langchain_community.vectorstores import Weaviate
         client = weaviate.Client(url)
         return Weaviate(client=client, embedding=embeddings, index_name="ChatbotIndex")
 
     elif vector_db.startswith("pgvector://"):
+        
         connection_string = vector_db.replace("pgvector://", "")
-        from langchain_community.vectorstores import PGVector
         return PGVector(connection_string=connection_string, embedding=embeddings)
 
     else:

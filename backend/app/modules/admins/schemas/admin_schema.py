@@ -1,24 +1,23 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from datetime import datetime
 
 class AdminBase(BaseModel):
-    username: str
     email: EmailStr
+    name: str
 
 class AdminCreate(AdminBase):
-    password: str
+    password: str  
 
-class AdminUpdate(BaseModel):
-    username: Optional[str] = None
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
+class AdminUpdate(AdminBase):
+    email: Optional[EmailStr]
+    name: Optional[str]
 
-class AdminOut(AdminBase):
+class AdminChangePassword(BaseModel):
+    old_password: str
+    new_password: str
+
+class AdminRead(AdminBase):
     id: int
-    is_superadmin: bool
-    created_at: datetime
-    updated_at: datetime
-
+   
     class Config:
         orm_mode = True

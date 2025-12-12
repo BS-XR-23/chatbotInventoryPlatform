@@ -1,9 +1,6 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime, timedelta
 from typing import List
 from modules.conversations.models.conversation_model import Conversation
-from modules.conversations.schemas.conversation_schema import ConversationCreate
 
 
 def get_conversations_with_chatbots(db: Session, user_id: int) -> List[Conversation]:

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, Enum, JSON
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Enum
 from sqlalchemy.orm import relationship
 from db.database import Base
 from core.enums import DocumentStatus

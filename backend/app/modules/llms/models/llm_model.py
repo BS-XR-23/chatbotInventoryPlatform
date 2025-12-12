@@ -1,7 +1,6 @@
 # modules/llms/llm_model.py
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum
 from sqlalchemy.orm import relationship, validates
-from datetime import datetime
 from db.database import Base
 from core.enums import LLMProvider
 

@@ -16,8 +16,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     DEBUG: bool =False
     ALLOWED_ORIGINS: str = ""
-    GOOGLE_API_KEY: str
-    GEMINI_API_KEY: str
+    
 
     @field_validator("ALLOWED_ORIGINS")
     def parse_allowed_origins(cls, v: str) ->List[str]:

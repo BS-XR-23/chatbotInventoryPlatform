@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from db.database import get_db
 from modules.auth.vendors import auth_vendor
-from modules.users.schemas.user_schema import UserCreate, UserRead
+from modules.users.schemas.user_schema import UserCreate, UserRead, UserUpdate
 from modules.users.services import user_service
 from modules.users.models.user_model import User
 from modules.auth.users import auth_user
@@ -29,7 +29,7 @@ def get_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get("/", response_model=list[UserRead])
+@router.get("/", response_model=List[UserRead])
 def get_users(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(auth_vendor.get_current_vendor)
@@ -40,7 +40,7 @@ def get_users(
 @router.put("/{user_id}", response_model=UserRead)
 def update_user(
     user_id: int,
-    user_data: UserCreate,
+    user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_user.get_current_user)
 ):
