@@ -1,7 +1,7 @@
 chatbotEnv/
 .venv/
-app/.env
+backend/app/.env
 
 # Optional: If you add a global .env later, ignore all .env files
 # **/*.env
-# .env
+.env
