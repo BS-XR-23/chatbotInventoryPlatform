@@ -64,7 +64,6 @@ def chatbot_interaction_user_singleturn(
     session_id=None
     )
 
-
 @router.post("/{chatbot_id}/chat", response_model=ChatResponse)
 def chatbot_interaction_multiturn(
     chatbot_id: int,
