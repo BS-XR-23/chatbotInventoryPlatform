@@ -1,33 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from db.database import get_db
 from modules.conversations.schemas.conversation_schema import ConversationCreate, ConversationRead
 from modules.conversations.services import conversation_service
+from modules.users.models.user_model import User
+from modules.vendors.models.vendor_model import Vendor
+from modules.auth.vendors.auth_vendor import get_current_vendor
+from modules.auth.users.auth_user import get_current_user
 
 router = APIRouter(tags=["Conversations"])
 
 @router.get("/", response_model=List[ConversationRead])
-def get_conversations(db: Session = Depends(get_db)):
-    return conversation_service.get_conversations(db)
+def get_conversations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return conversation_service.get_conversations_with_chatbots(db, current_user.id)
 
-@router.get("/{conversation_id}", response_model=ConversationRead)
-def get_conversation(conversation_id: int, db: Session = Depends(get_db)):
-    conv = conversation_service.get_conversation(db, conversation_id)
+@router.get("/{chatbot_id}", response_model=List[ConversationRead])
+def get_conversation(chatbot_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    conv = conversation_service.get_conversations_with_a_chatbot(db, current_user.id, chatbot_id)
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return conv
 
-@router.put("/{conversation_id}", response_model=ConversationRead)
-def update_conversation(conversation_id: int, conv_data: ConversationCreate, db: Session = Depends(get_db)):
-    conv = conversation_service.update_conversation(db, conversation_id, conv_data)
-    if not conv:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    return conv
 
 @router.delete("/{conversation_id}")
-def delete_conversation(conversation_id: int, db: Session = Depends(get_db)):
+def delete_conversation(conversation_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     success = conversation_service.delete_conversation(db, conversation_id)
     if not success:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return {"detail": "Conversation deleted successfully"}
+
+

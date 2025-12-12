@@ -3,9 +3,9 @@ from typing import Optional
 from core.enums import APIKeyStatus
 
 class APIKeyBase(BaseModel):
-    name: str
     vendor_id: int
     user_id: int
+    chatbot_id: int
     key: str
     status: APIKeyStatus = APIKeyStatus.active
 
@@ -13,6 +13,7 @@ class APIKeyCreate(APIKeyBase):
     pass
 
 class APIKeyUpdate(BaseModel):
+    chatbot_id: Optional[int] = None
     status: Optional[APIKeyStatus] = None
 
 class APIKeyRead(APIKeyBase):

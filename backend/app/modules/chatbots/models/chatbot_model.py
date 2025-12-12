@@ -13,7 +13,6 @@ class Chatbot(Base):
     system_prompt = Column(Text, nullable=True)
     llm_id = Column(Integer, ForeignKey("llms.id"))
     llm_path = Column(String, nullable=False) 
-    api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True)
     vector_db = Column(String, nullable=True)
     mode = Column(Enum(ChatbotMode), default=ChatbotMode.private)
     is_active = Column(Boolean, default=True)
@@ -24,7 +23,8 @@ class Chatbot(Base):
     llm = relationship("LLM", back_populates="chatbots")
     documents = relationship("Document", back_populates="chatbot", cascade="all, delete-orphan")
     messages = relationship("Conversation", back_populates="chatbot", cascade="all, delete-orphan")
-    api_key = relationship("APIKey", back_populates="chatbots")
+    api_keys = relationship("APIKey", back_populates="chatbot", cascade="all, delete-orphan")
+
 
 
 

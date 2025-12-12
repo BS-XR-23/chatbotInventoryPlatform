@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session, HTTPException
+from sqlalchemy.orm import Session
+from fastapi import Depends, HTTPException
 from typing import List
 from modules.api_keys.models.api_model import APIKey
-from modules.api_keys.schemas.api_schema import APIKeyCreate
+from modules.api_keys.schemas.api_schema import APIKeyCreate, APIKeyUpdate
 
 def create_api_key(db: Session, api_key_data: APIKeyCreate) -> APIKey:
     new_key = APIKey(**api_key_data.dict())
@@ -25,7 +26,7 @@ def get_api_key(db: Session, key_id: int) -> APIKey:
     return api_key
 
 
-def update_api_key(db: Session, key_id: int, api_key_data: APIKeyCreate) -> APIKey:
+def update_api_key(db: Session, key_id: int, api_key_data: APIKeyUpdate) -> APIKey:
     key = db.query(APIKey).get(key_id)
     if not key:
         return None

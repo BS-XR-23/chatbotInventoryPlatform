@@ -11,6 +11,7 @@ from modules.users.models.user_model import User
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.users.auth_user import get_current_user
 
+
 router = APIRouter(tags=["Chatbots"])
 
 @router.post("/", response_model=ChatbotRead)
@@ -73,20 +74,23 @@ def chatbot_interaction_multiturn(
 ):
     session_id = request.session_id or str(uuid4())
 
-    user_id = current_user.id
-
     ai_text = chatbot_service.handle_conversation_multiturn(
         db=db,
         question=request.question,
         chatbot_id=chatbot_id,
         session_id=session_id,
-        user_id=user_id,
+        user_id=current_user.id,
     )
 
-    # RETURN THE SAME session_id BACK
     return ChatResponse(
         answer=ai_text,
         session_id=session_id
     )
 
+#  GLOBAL PUBLIC ANALYTICS
+@router.get("/global/top-chatbots")
+def global_top_chatbots(
+    db: Session = Depends(get_db)
+):
+    return chatbot_service.get_global_top_chatbots(db)
 

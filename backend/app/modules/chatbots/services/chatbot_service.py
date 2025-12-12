@@ -1,17 +1,17 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
-import os
+from sqlalchemy import func
+from sqlalchemy import func
 from typing import List
 from uuid import uuid4
-from core.enums import SenderType
+from core.enums import SenderType, ChatbotMode
 from modules.api_keys.models.api_model import APIKey
-from modules.llms.models.llm_model import LLM
-from modules.documents.models.document_model import Document
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
 from modules.embeddings.models.embedding_model import Embedding
+from modules.vendors.models.vendor_model import Vendor
 from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotUpdate
 from modules.rag.services import rag_service
 
@@ -106,13 +106,33 @@ def handle_conversation_multiturn(
     session_id: str = None,
     user_id: int = None
 ):
-    # 1️⃣ Fetch chatbot
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
         Chatbot.is_active == True
     ).first()
     if not chatbot:
         raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
+    
+    vendor_obj = chatbot.vendor
+
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Multiturn conversations require a registered user"
+        )
+
+    if chatbot.mode == ChatbotMode.private:
+        api_key = db.query(APIKey).filter(
+            APIKey.user_id == user_id,
+            APIKey.chatbot_id == chatbot_id,
+            APIKey.vendor_id == vendor_obj.id,
+            APIKey.status == "active"
+        ).first()
+        if not api_key:
+            raise HTTPException(
+                status_code=403,
+                detail="User does not have an active API key for this private chatbot"
+            )
 
     session_id = session_id or str(uuid4())
 
@@ -172,12 +192,42 @@ def handle_conversation_multiturn(
         session_id=session_id,
         sender_type=SenderType.chatbot,
         content=ai_text,
+        user_id=user_id,                
         chatbot_id=chatbot_id,
         token_count=len(ai_text.split())
     ))
     db.commit()
 
     return ai_text
+
+#  GLOBAL TOP CHATBOTS (Public Analytics)
+def get_global_top_chatbots(db: Session, limit: int = 3):
+
+    rows = (
+        db.query(
+            Chatbot.id.label("chatbot_id"),
+            Chatbot.name.label("chatbot_name"),
+            Vendor.id.label("vendor_id"),
+            Vendor.name.label("vendor_name"),
+            func.count(Conversation.id).label("message_count")
+        )
+        .join(Vendor, Vendor.id == Chatbot.vendor_id)
+        .join(Conversation, Conversation.chatbot_id == Chatbot.id)
+        .group_by(Chatbot.id, Vendor.id)
+        .order_by(func.count(Conversation.id).desc())
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "chatbot_id": r.chatbot_id,
+            "chatbot_name": r.chatbot_name,
+            "vendor_id": r.vendor_id,
+            "vendor_name": r.vendor_name
+        }
+        for r in rows
+    ]
 
 
 

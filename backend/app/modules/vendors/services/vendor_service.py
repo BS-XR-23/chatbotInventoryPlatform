@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from modules.vendors.models.vendor_model import Vendor
 from modules.vendors.schemas.vendor_schema import VendorCreate, VendorUpdate
@@ -46,3 +47,7 @@ def delete_vendor(db: Session, vendor_id: int) -> bool:
     db.delete(vendor)
     db.commit()
     return True
+
+def get_vendor_stats(db: Session):
+    total_vendors = db.query(func.count(Vendor.id)).scalar()
+    return {"total_vendors": total_vendors}
