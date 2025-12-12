@@ -11,11 +11,11 @@ from core.config import settings
 from modules.users.models.user_model import User 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/user/token")
+user_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/user/token")
 
 
 def get_password_hash(password: str):
-    truncated_password = password[:72] 
+    truncated_password = password[:72]  
     return pwd_context.hash(truncated_password)
 
 
@@ -32,7 +32,7 @@ def authenticate_user(db: Session, email: str, password: str):
     if not user_obj:
         return False
     if not verify_password(password, user_obj.hashed_password):
-        return False
+        return False 
     return user_obj
 
 
@@ -43,7 +43,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(token: str = Depends(user_oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

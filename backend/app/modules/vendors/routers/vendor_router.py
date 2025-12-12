@@ -42,4 +42,7 @@ def update_vendor(
         raise HTTPException(status_code=404, detail="Vendor not found")
     return updated_vendor
 
+@router.get("/stats")
+def vendor_stats(db: Session = Depends(get_db)):
+    return vendor_service.get_vendor_stats(db)
 

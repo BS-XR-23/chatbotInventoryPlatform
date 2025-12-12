@@ -15,6 +15,10 @@ class SenderType(str, enum.Enum):
     external = "external"
     chatbot = "chatbot"
 
+class VendorStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"
+
 class DocumentStatus(str, enum.Enum):
     processing = "processing"
     ready = "success"

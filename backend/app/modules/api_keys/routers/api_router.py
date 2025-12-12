@@ -32,7 +32,7 @@ def get_api_key(key_id: int, db: Session = Depends(get_db), current_user: User =
 
 # Update API Key
 @router.put("/{key_id}", response_model=api_schema.APIKeyRead)
-def update_api_key(key_id: int, api_key_data: api_schema.APIKeyCreate, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
+def update_api_key(key_id: int, api_key_data: api_schema.APIKeyUpdate, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
     key = api_service.update_api_key(db, key_id, api_key_data)
     if not key:
         raise HTTPException(status_code=404, detail="API Key not found")

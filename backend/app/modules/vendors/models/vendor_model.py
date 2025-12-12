@@ -14,4 +14,4 @@ class Vendor(Base):
     users = relationship("User", back_populates="vendor")
     chatbots = relationship("Chatbot", back_populates="vendor")
     documents = relationship("Document", back_populates="vendor")
-    api_keys = relationship("APIKey", back_populates="vendor")
+    api_keys = relationship("APIKey", back_populates="vendor", cascade="all, delete-orphan")
