@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from core.enums import APIKeyStatus
 
@@ -18,6 +18,5 @@ class APIKeyUpdate(BaseModel):
 
 class APIKeyRead(APIKeyBase):
     id: int 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
