@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from langchain_ollama import ChatOllama
-from langchain.messages import HumanMessage, AIMessage, SystemMessage
+from langchain.messages import HumanMessage, SystemMessage
 from modules.chatbots.models.chatbot_model import Chatbot
 from utils.convert_to_txt import convert_to_txt
 

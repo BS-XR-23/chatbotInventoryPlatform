@@ -1,8 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.orm import declarative_base
-from datetime import datetime
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String
+from db.database import Base
 
 class Admin(Base):
     __tablename__ = "admins"
@@ -11,6 +8,3 @@ class Admin(Base):
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_superadmin = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -2,14 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from db.database import engine, Base
-from modules.api_keys.models import api_model
-from modules.chatbots.models import chatbot_model
-from modules.conversations.models import conversation_model
-from modules.documents.models import document_model
-from modules.embeddings.models import embedding_model
-from modules.llms.models import llm_model
-from modules.users.models import user_model
-from modules.vendors.models import vendor_model
 from modules.vendors.routers import vendor_router
 from modules.users.routers import user_router
 from modules.api_keys.routers import api_router
@@ -19,7 +11,7 @@ from modules.documents.routers import document_router
 from modules.llms.routers import llm_router
 from modules.embeddings.routers import embedding_router
 from modules.auth.routers import auth_router
-from modules.vendors.routers import vendor_dashboard_router
+from modules.admins.routers import admin_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -48,7 +40,7 @@ app.include_router(document_router.router, prefix="/documents", tags=["Documents
 app.include_router(llm_router.router, prefix="/llms", tags=["LLMs"])
 app.include_router(embedding_router.router, prefix="/embeddings", tags=["Embeddings"])
 app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
-app.include_router(vendor_dashboard_router.router, prefix="/vendor-dashboard", tags=["Vendor Dashboard"])
+app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
 
 
 if __name__ == "__main__":

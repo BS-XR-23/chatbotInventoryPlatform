@@ -4,7 +4,7 @@ import threading, subprocess
 from typing import List, Optional
 from modules.llms.models.llm_model import LLM
 from modules.llms.schemas.llm_schema import LLMCreate, LLMUpdate
-from utils.ollama_tasks import pull_ollama_model, pull_embedding_model, sync_ollama_models
+
 
 
 

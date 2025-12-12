@@ -3,9 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from db.database import get_db
 from modules.documents.schemas.document_schema import DocumentCreate, DocumentRead
-from modules.chatbots.schemas.chatbot_schema import ChatbotRead
 from modules.documents.services import document_service
-from modules.rag.services import rag_service
 from modules.vendors.models.vendor_model import Vendor
 from modules.auth.vendors.auth_vendor import get_current_vendor
 

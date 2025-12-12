@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Enum
 from sqlalchemy.orm import relationship
 from db.database import Base
+from core.enums import VendorStatus
 
 class Vendor(Base):
     __tablename__ = "vendors"
@@ -9,7 +10,7 @@ class Vendor(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
     domain = Column(String, unique=True, nullable=False)
-    status = Column(Boolean, default=True)
+    status = Column(Enum(VendorStatus), default=VendorStatus.active)
 
     users = relationship("User", back_populates="vendor")
     chatbots = relationship("Chatbot", back_populates="vendor")

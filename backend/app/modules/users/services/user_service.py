@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
 from modules.users.models.user_model import User
-from modules.users.schemas.user_schema import UserCreate
+from modules.users.schemas.user_schema import UserCreate, UserUpdate
 from modules.auth.users import auth_user
 
 
@@ -29,7 +29,7 @@ def get_users_by_vendor(db: Session, vendor_id: int) -> List[User]:
 def get_user(db: Session, user_id: int) -> User:
     return db.query(User).filter(User.id == user_id).first()
 
-def update_user(db: Session, user_id: int, user_data: UserCreate) -> User:
+def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None

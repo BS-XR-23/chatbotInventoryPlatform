@@ -3,8 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from db.database import get_db
-from modules.vendors.models.vendor_model import Vendor
-
+from modules.auth.admins import auth_admin
 from modules.auth.users import auth_user
 from modules.auth.vendors import auth_vendor
 
@@ -23,6 +22,21 @@ def login_user_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth_user.create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/admin/token", name="Admin Login")
+def login_admin_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    admin = auth_admin.authenticate_admin(db, form_data.username, form_data.password)
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token = auth_admin.create_access_token(data={"sub": admin.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 

@@ -1,150 +1,110 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-
 from db.database import get_db
-from modules.admin import admin_services
-from modules.admin.admin_schema import (
-    AdminCreate, AdminUpdate, AdminOut,
-    SystemSettingsUpdate, SystemSettingsOut
-)
+from modules.admins.models.admin_model import Admin
+from modules.admins.schemas.admin_schema import AdminCreate, AdminRead, AdminUpdate, AdminChangePassword
+from modules.auth.admins import auth_admin
+from modules.admins.services import admin_service
+from modules.vendors.schemas.vendor_schema import VendorRead, VendorStatusUpdate
+from modules.documents.schemas.document_schema import DocumentRead
+from modules.documents.services import document_service
 
-router = APIRouter(prefix="/admin", tags=["Admin"])
 
-# -------------------
-# Admin Profile
-# -------------------
-@router.get("/profile", response_model=AdminOut)
-def get_admin_profile(admin_id: int, db: Session = Depends(get_db)):
-    admin = admin_services.get_admin(db, admin_id)
+router = APIRouter(tags=["Admins"])
+
+@router.post("/create", response_model=AdminRead)
+def create_admin(admin: AdminCreate, db: Session = Depends(get_db)):
+    new_admin = admin_service.create_admin(db, admin)
+    if not new_admin:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    return new_admin
+
+@router.get("/me/{admin_id}", response_model=AdminRead)
+def get_admin(
+    admin_id: int,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(auth_admin.get_current_admin)
+):
+    admin = admin_service.get_admin(db, admin_id)
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
     return admin
 
-@router.put("/profile", response_model=AdminOut)
-def update_admin_profile(admin_id: int, data: AdminUpdate, db: Session = Depends(get_db)):
-    admin = admin_services.update_admin(db, admin_id, data)
-    if not admin:
+@router.put("/edit/{admin_id}", response_model=AdminRead)
+def update_admin(
+    admin_id: int,
+    admin_data: AdminUpdate,
+    db: Session = Depends(get_db),
+    current_admin: Admin= Depends(auth_admin.get_current_admin)
+):
+    updated_admin = admin_service.update_admin(db, admin_id, admin_data)
+    if not updated_admin:
         raise HTTPException(status_code=404, detail="Admin not found")
-    return admin
+    return updated_admin
 
-@router.post("/", response_model=AdminOut)
-def create_admin(data: AdminCreate, db: Session = Depends(get_db)):
-    return admin_services.create_admin(db, data)
+@router.put("/change-password")
+def update_admin_password(
+    body: AdminChangePassword,
+    db: Session = Depends(get_db),
+    current_admin=Depends(auth_admin.get_current_admin)
+):
+    updated_admin, error = admin_service.change_admin_password(
+        db,
+        admin_id=current_admin.id,
+        old_password=body.old_password,
+        new_password=body.new_password
+    )
 
-# -------------------
-# System Settings
-# -------------------
-@router.get("/settings", response_model=SystemSettingsOut)
-def get_system_settings(db: Session = Depends(get_db)):
-    settings = admin_services.get_system_settings(db)
-    if not settings:
-        raise HTTPException(status_code=404, detail="System settings not found")
-    return settings
+    if error:
+        raise HTTPException(status_code=400, detail=error)
 
-@router.put("/settings", response_model=SystemSettingsOut)
-def update_system_settings(data: SystemSettingsUpdate, db: Session = Depends(get_db)):
-    return admin_services.update_system_settings(db, data)
+    return {"message": "Password updated successfully"}
 
-# -------------------
-# Analytics Overview
-# -------------------
-@router.get("/analytics")
-def get_platform_analytics(db: Session = Depends(get_db)):
-    return admin_services.get_analytics(db)
 
-# -------------------
-# Vendor Management
-# -------------------
-@router.get("/vendors")
-def list_vendors(db: Session = Depends(get_db)):
-    return admin_services.list_vendors(db)
-
-@router.post("/vendors")
-def create_vendor(data: dict, db: Session = Depends(get_db)):
-    return admin_services.create_vendor(db, data)
-
-@router.put("/vendors/{vendor_id}")
-def update_vendor(vendor_id: int, data: dict, db: Session = Depends(get_db)):
-    return admin_services.update_vendor(db, vendor_id, data)
-
-@router.delete("/vendors/{vendor_id}")
-def delete_vendor(vendor_id: int, db: Session = Depends(get_db)):
-    return admin_services.delete_vendor(db, vendor_id)
-
-# -------------------
-# Chatbot Management
-# -------------------
-@router.get("/chatbots")
-def list_chatbots(db: Session = Depends(get_db)):
-    return admin_services.list_chatbots(db)
-
-@router.post("/chatbots")
-def create_chatbot(data: dict, db: Session = Depends(get_db)):
-    return admin_services.create_chatbot(db, data)
-
-@router.put("/chatbots/{chatbot_id}")
-def update_chatbot(chatbot_id: int, data: dict, db: Session = Depends(get_db)):
-    return admin_services.update_chatbot(db, chatbot_id, data)
-
-@router.delete("/chatbots/{chatbot_id}")
-def delete_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
-    return admin_services.delete_chatbot(db, chatbot_id)
+@router.put("/update-vendors/{vendor_id}", response_model=VendorRead)
+def update_vendor_status(
+    vendor_id: int,
+    vendor_data: VendorStatusUpdate,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(auth_admin.get_current_admin)
+):
+    updated_vendor = admin_service.update_vendor_status(db, vendor_id, vendor_data)
+    if not updated_vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    return updated_vendor
 
 @router.post("/chatbots/{chatbot_id}/duplicate")
-def duplicate_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
-    return admin_services.duplicate_chatbot(db, chatbot_id)
+def duplicate_chatbot(
+    chatbot_id: int,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(auth_admin.get_current_admin)
+):
+    duplicated_chatbot = admin_service.duplicate_chatbot(db, chatbot_id)
 
-@router.post("/chatbots/{chatbot_id}/toggle")
-def toggle_chatbot_status(chatbot_id: int, db: Session = Depends(get_db)):
-    return admin_services.toggle_chatbot_status(db, chatbot_id)
+    if not duplicated_chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found or cannot be duplicated")
 
-# -------------------
-# LLM & Embeddings
-# -------------------
-@router.get("/llms")
-def list_llms(db: Session = Depends(get_db)):
-    return admin_services.list_llms(db)
+    return duplicated_chatbot
 
-@router.post("/llms")
-def create_llm(data: dict, db: Session = Depends(get_db)):
-    return admin_services.create_llm(db, data)
+@router.get("/documents", response_model=List[DocumentRead])
+def get_documents(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return document_service.get_documents(db)
 
-@router.put("/llms/{llm_id}")
-def update_llm(llm_id: int, data: dict, db: Session = Depends(get_db)):
-    return admin_services.update_llm(db, llm_id, data)
 
-@router.delete("/llms/{llm_id}")
-def delete_llm(llm_id: int, db: Session = Depends(get_db)):
-    return admin_services.delete_llm(db, llm_id)
+@router.get("/most-users")
+def most_users(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_vendor_with_most_users(db)
 
-@router.get("/embeddings")
-def list_embeddings(db: Session = Depends(get_db)):
-    return admin_services.list_embeddings(db)
+@router.get("/most-chatbots")
+def most_chatbots(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_vendor_with_most_chatbots(db)
 
-@router.post("/embeddings")
-def create_embedding(data: dict, db: Session = Depends(get_db)):
-    return admin_services.create_embedding(db, data)
+@router.get("/most-used-chatbot")
+def most_used_chatbot(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_most_used_chatbot(db)
 
-@router.put("/embeddings/{embedding_id}")
-def update_embedding(embedding_id: int, data: dict, db: Session = Depends(get_db)):
-    return admin_services.update_embedding(db, embedding_id, data)
+@router.get("/total-tokens/{vendor_id}")
+def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_total_tokens_by_vendor(db, vendor_id)
 
-@router.delete("/embeddings/{embedding_id}")
-def delete_embedding(embedding_id: int, db: Session = Depends(get_db)):
-    return admin_services.delete_embedding(db, embedding_id)
-
-# -------------------
-# Document Library
-# -------------------
-@router.get("/documents")
-def list_documents(db: Session = Depends(get_db)):
-    return admin_services.list_documents(db)
-
-@router.delete("/documents/{document_id}")
-def delete_document(document_id: int, db: Session = Depends(get_db)):
-    return admin_services.delete_document(db, document_id)
-
-@router.post("/documents/{document_id}/reprocess")
-def reprocess_document(document_id: int, db: Session = Depends(get_db)):
-    return admin_services.reprocess_document(db, document_id)
