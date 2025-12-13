@@ -17,7 +17,7 @@ def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
 
     new_vendor = Vendor(
         **vendor_data.dict(exclude={"password"}),
-        hashed_password=hashed_password  # <- match your model column
+        hashed_password=hashed_password 
     )
 
     db.add(new_vendor)

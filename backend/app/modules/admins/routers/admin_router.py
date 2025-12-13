@@ -74,7 +74,7 @@ def update_vendor_status(
         raise HTTPException(status_code=404, detail="Vendor not found")
     return updated_vendor
 
-@router.post("/chatbots/{chatbot_id}/duplicate")
+@router.post("/chatbots/duplicate/{chatbot_id}")
 def duplicate_chatbot(
     chatbot_id: int,
     db: Session = Depends(get_db),
@@ -92,11 +92,11 @@ def get_documents(db: Session = Depends(get_db), current_admin: Admin = Depends(
     return document_service.get_documents(db)
 
 
-@router.get("/most-users")
+@router.get("/most-users-by-vendors")
 def most_users(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
     return admin_service.get_vendor_with_most_users(db)
 
-@router.get("/most-chatbots")
+@router.get("/most-chatbots-by-vendors")
 def most_chatbots(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
     return admin_service.get_vendor_with_most_chatbots(db)
 

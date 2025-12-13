@@ -8,6 +8,8 @@ from typing import Optional
 from db.database import get_db
 from core.config import settings
 from modules.vendors.models.vendor_model import Vendor
+from core.exceptions import VendorNotActiveException
+from core.enums import VendorStatus
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -55,5 +57,9 @@ def get_current_vendor(token: str = Depends(vendor_oauth2_scheme), db: Session =
     vendor_obj = get_vendor(db, email=email, domain=domain)
     if vendor_obj is None:
         raise credentials_exception
+    
+    if vendor_obj.status != VendorStatus.active:
+        raise VendorNotActiveException()
+
     return vendor_obj
 

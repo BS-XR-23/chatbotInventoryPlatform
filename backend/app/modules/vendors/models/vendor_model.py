@@ -10,7 +10,7 @@ class Vendor(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
     domain = Column(String, unique=True, nullable=False)
-    status = Column(Enum(VendorStatus), default=VendorStatus.active)
+    status = Column(Enum(VendorStatus, native_enum=False), default=VendorStatus.active, nullable=False)
 
     users = relationship("User", back_populates="vendor")
     chatbots = relationship("Chatbot", back_populates="vendor")
