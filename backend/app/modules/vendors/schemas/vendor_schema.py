@@ -18,7 +18,7 @@ class VendorUpdate(BaseModel):
     
 
 class VendorStatusUpdate(BaseModel):
-    role: Optional[VendorStatus] = None
+    status: Optional[VendorStatus] = None
 
 class VendorRead(VendorBase):
     id: int
