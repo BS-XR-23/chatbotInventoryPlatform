@@ -37,7 +37,7 @@ def get_users(
     return user_service.get_users_by_vendor(db, current_vendor.id)
     
 
-@router.put("/{user_id}", response_model=UserRead)
+@router.put("/update/{user_id}", response_model=UserRead)
 def update_user(
     user_id: int,
     user_data: UserUpdate,
