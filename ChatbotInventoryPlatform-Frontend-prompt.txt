@@ -1,0 +1,160 @@
+Chatbot Inventory Platform: A multi-tenant Chatbot Inventory Platform that allows admins and vendors (companies) to create, configure, and manage RAG-based chatbots. Each vendor will have isolated data, API keys, document stores, and usage analytics.
+
+##Build me the frontend based on all the data given below. If you need further information, ask me before generating.
+
+This is my main fastAPI file:
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from core.config import settings
+from db.database import engine, Base
+from modules.vendors.routers import vendor_router
+from modules.users.routers import user_router
+from modules.api_keys.routers import api_router
+from modules.chatbots.routers import chatbot_router
+from modules.conversations.routers import conversation_router
+from modules.documents.routers import document_router
+from modules.llms.routers import llm_router
+from modules.embeddings.routers import embedding_router
+from modules.auth.routers import auth_router
+from modules.admins.routers import admin_router
+
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="chatbot-inventory-FastAPI",
+    version = "0.1.0",
+    docs_url="/docs",
+)
+
+app.add_middleware(
+    #Cross Origin Resource Sharing -> CORS
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(user_router.router, prefix="/users", tags=["Users"])
+app.include_router(vendor_router.router, prefix="/vendors", tags=["Vendors"])
+app.include_router(api_router.router, prefix="/api-keys", tags=["API Keys"])
+app.include_router(chatbot_router.router, prefix="/chatbots", tags=["Chatbots"])
+app.include_router(conversation_router.router, prefix="/conversations", tags=["Conversations"])
+app.include_router(document_router.router, prefix="/documents", tags=["Documents"])
+app.include_router(llm_router.router, prefix="/llms", tags=["LLMs"])
+app.include_router(embedding_router.router, prefix="/embeddings", tags=["Embeddings"])
+app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
+app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=9000, reload=True)
+
+
+Project folder Structure: chatbotInventoryPlatform->1.frontend,2.backend->app->modules-> <module_name> -> routers (contain all endpoints of a specific module)
+*module_name:
+What it does:
+->
+->
+endpoints:
+->what the endpoint does->the endpoint routers
+
+1. Admin:
+Admin Dashboard: Will have a profile icon and profile information-> get admin. Profile will have settings and services. 
+->Settings-> update admin profile, change password
+->Services-> change vendor status, view uploaded documents, duplicate chatbots, get most users of a vendor, get most chatbots of a vendor, get most used chatbot, total tokens used by vendors, From Embeddings:add embedding,get list of embeddings,get an embedding,update an embedding,delete an embedding, From LLM:create llm,get list of llms, get a llm,update llm,delete llm
+
+endpoints:
+->create admin-> @router.post("/create", response_model=AdminRead)
+->get admin-> @router.get("/me/{admin_id}", response_model=AdminRead)
+->update admin profile->@router.put("/edit/{admin_id}", response_model=AdminRead)
+->change password->@router.put("/change-password")
+->change vendor status->@router.put("/update-vendors/{vendor_id}", response_model=VendorRead)
+->view uploaded documents->@router.get("/documents", response_model=List[DocumentRead])
+->duplicate created chatbot->@router.post("/chatbots/duplicate/{chatbot_id}")
+->get most users of a vendor->@router.get("/most-users-by-vendors")
+->get most chatbots of a vendor->@router.get("/most-chatbots-by-vendors")
+->get most used chatbot->@router.get("/most-used-chatbot")
+->total tokens used by vendors->@router.get("/total-tokens/{vendor_id}")
+
+
+2. Vendor:
+Vendor dashboard:  Will have a profile icon and profile information-> get a specific vendor. Profile will have settings and services.
+-> Settings->update vendor profile
+->Services->top used chatbot with message count,top used chatbot by users, daily message count,daily unique users,tokens used in last 7 days by a specific user,total tokens used by a user,total message count between a spicific user and a specific chatbot, get all users of a vendor(from User routes), 
+ ->From Chatbot->create chatbot,get chatbots of a vendor, update a chatbot,delete a chatbot
+ ->From Document->preview document,save document,get all uploaded documents,get a single document,delete a document,create a knowledgebase for rag
+
+endpoints:
+->create vendor->@router.post("/create", response_model=VendorRead)
+->get list of all vendors->@router.get("/all-vendors", response_model=List[VendorRead])
+->get a specific vendor->@router.get("/{vendor_id}", response_model=VendorRead)
+->update vendor profile->@router.put("/update/{vendor_id}", response_model=VendorRead)
+->top used chatbot with message count->@router.get("/top-chatbots/messages")
+->top used chatbot by users->@router.get("/top-chatbots/users")
+->daily message count->@router.get("/daily/messages")
+->daily unique users->@router.get("/daily/unique-users")
+->tokens used in last 7 days by a specific user->@router.get("/user/{user_id}/tokens-last7")
+->total tokens used by a user->@router.get("/user/{user_id}/tokens-total")
+->total message count between a spicific user and a specific chatbot->@router.get("/user/{user_id}/chatbot/{chatbot_id}/messages-count")
+
+3. User: Every single visitor to the app web app will be an user. If users create an account then they will be authenticated user.
+User profile: Will contain user information and settings->get a user. 
+->Settings->update user profile, delete user
+->Services-> From Chatbot: get all chatbot, get a specific chatbot, Top chatbots list for anyone to see(no need for user authentication) , From Conversation: get conversation of a user,get conversation of a user with a specific chatbot,delete a conversation
+
+endpoints:
+->create user->@router.post("/create", response_model=UserRead)
+->get a user->@router.get("/{user_id}", response_model=UserRead)
+->get all users of a vendor->@router.get("/", response_model=List[UserRead])
+->update user profile->@router.put("/update/{user_id}", response_model=UserRead)
+->delete user->@router.delete("/{user_id}")
+
+4. Chatbot: The main products of the platform
+endpoints:
+->create chatbot->@router.post("/", response_model=ChatbotRead)
+->get chatbots of a vendor->@router.get("/", response_model=List[ChatbotRead])
+->get all chatbots->@router.get("/", response_model=List[ChatbotRead])
+->get a specific chatbot->@router.get("/{chatbot_id}", response_model=ChatbotRead)
+->update a chatbot->@router.put("/{chatbot_id}", response_model=ChatbotRead)
+->delete a chatbot->@router.delete("/{chatbot_id}")
+
+->ChatBubble:Will be for users. Users will have this chat bubble->The bubble will be a toggle->ask and chat:	
+	->ask->@router.post("/{chatbot_id}/ask", response_model=ChatResponse)
+	->chat->@router.post("/{chatbot_id}/chat", response_model=ChatResponse)
+->Top chatbots list for anyone to see->@router.get("/global/top-chatbots")
+
+5. Conversation:
+endpoints:
+->get conversation of a user ->@router.get("/", response_model=List[ConversationRead])
+->get conversation of a user with a specific chatbot->@router.get("/{chatbot_id}", response_model=List[ConversationRead])
+->delete a conversation->@router.delete("/{conversation_id}")
+
+6. Document:
+Instructions: Vendor dashboard will have an upload document button. Clicking the buttton will open a sub window that has the following fields->  upload document, summary, tags and at the bottom right most corner->save document. When using the upload document field, it will call the preview document endpoint. Preview document will return title, summary, tags that will be ai generated and the summary and tags field will be populated by these values. save document button will use the save document endpoint. This endpoint will save the document in database. 
+endpoints:
+->preview document-> @router.post("/preview", response_model=DocumentCreate)
+->save document->@router.post("/add", response_model=DocumentRead)
+->get all uploaded documents->@router.get("/", response_model=List[DocumentRead])
+->get a single document->@router.get("/{document_id}", response_model=DocumentRead)
+->update a document->@router.put("/{document_id}", response_model=DocumentRead)
+->delete a document->@router.delete("/{document_id}")
+->create a knowledgebase for rag->@router.post("/{document_id}/knowledge-base")
+
+7. Embeddings:
+endpoints:
+->add embedding->@router.post("/create", response_model=EmbeddingRead)
+->get list of embeddings->@router.get("/", response_model=List[EmbeddingRead])
+->get an embedding->@router.get("/{embedding_id}", response_model=EmbeddingRead)
+->update an embedding->@router.put("/update/{embedding_id}", response_model=EmbeddingRead)
+->delete an embedding->@router.delete("/delete/{embedding_id}")
+
+8. LLm:
+endpoints:
+->create llm->@router.post("/", response_model=LLMRead)
+->get list of llms->@router.get("/", response_model=List[LLMRead])
+->get a llm->@router.get("/{llm_id}", response_model=LLMRead)
+->update llm->@router.put("/{llm_id}", response_model=LLMRead)
+->delete llm->@router.delete("/{llm_id}")
