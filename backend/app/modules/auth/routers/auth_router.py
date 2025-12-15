@@ -40,7 +40,7 @@ def login_admin_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/{vendor_domain}", name="Vendor Login")
+@router.post("/vendor/{vendor_domain}/token", name="Vendor Login")
 def login_vendor_token(
     vendor_domain: str,
     form_data: OAuth2PasswordRequestForm = Depends(),

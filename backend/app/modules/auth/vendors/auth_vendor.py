@@ -13,7 +13,7 @@ from core.enums import VendorStatus
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-vendor_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/vendor/token")
+vendor_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/vendor/{vendor_domain}/token")
 
 def get_password_hash(password: str):
     truncated_password = password[:72]
