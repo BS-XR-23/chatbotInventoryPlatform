@@ -1,0 +1,13 @@
+[00:00:00.640] Server  LOG      ✓ Ready in 446ms
+[00:00:03.367] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:03.423] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:03.520] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
+[00:00:03.520] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/","route":"/"}
+[00:00:03.520] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/ color: rgb(120, 120, 120) color: inherit {"dp":"/","o":"http://localhost:3000/","r":"","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1765792220826}
+[00:00:03.714] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
+[00:00:03.714] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/login","route":"/login"}
+[00:00:03.714] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/login color: rgb(120, 120, 120) color: inherit {"dp":"/login","o":"http://localhost:3000/login","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1765792220959}
+[00:00:05.195] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/login color: rgb(120, 120, 120) color: inherit {"dp":"/login","o":"http://localhost:3000/login","sdkn":"@vercel/analytics/next","sdkv":"1.3.1","sv":"0.1.3","ts":1765792222498}
+[00:00:11.987] Browser LOG     [v0] Login attempt started {"apiBaseUrl":"http://localhost:9000","email":"bs@bd.com","role":"vendor","vendor_domain":"Bangladesh"}
+[00:00:12.470] Browser LOG     [v0] Login response received {"fullResponse":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJic0BiZC5jb20iLCJkb21haW4iOiJCYW5nbGFkZXNoIiwiZXhwIjoxNzY1Nzk1ODI5fQ.OkJlLd1xIQD0Lk4BzNcn5ug3ykNm9iyL33dLYsQTt5Q","token_type":"bearer"},"hasToken":true,"tokenType":"bearer"}
+[00:00:12.470] Browser LOG     [v0] Redirecting to /vendor

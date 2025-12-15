@@ -23,9 +23,8 @@ app = FastAPI(
 )
 
 app.add_middleware(
-    #Cross Origin Resource Sharing -> CORS
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,4 +44,4 @@ app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=9000, reload=True)
+    uvicorn.run("main:app", host="localhost", port=9000, reload=True)

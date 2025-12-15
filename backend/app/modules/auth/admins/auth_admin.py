@@ -11,7 +11,7 @@ from core.config import settings
 from modules.admins.models.admin_model import Admin
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-admin_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/user/token")
+admin_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/admin/token")
 
 
 def get_password_hash(password: str):

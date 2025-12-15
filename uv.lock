@@ -458,7 +458,7 @@ dependencies = [
     { name = "celery" },
     { name = "chromadb" },
     { name = "email-validator" },
-    { name = "fastapi", extra = ["all"] },
+    { name = "fastapi", extra = ["all", "standard"] },
     { name = "fastapi-limiter" },
     { name = "httpx" },
     { name = "langchain" },
@@ -505,7 +505,7 @@ requires-dist = [
     { name = "celery", specifier = ">=5.5.3" },
     { name = "chromadb", specifier = ">=1.3.5" },
     { name = "email-validator", specifier = ">=2.3.0" },
-    { name = "fastapi", extras = ["all"], specifier = ">=0.122.0" },
+    { name = "fastapi", extras = ["all", "standard"], specifier = ">=0.122.0" },
     { name = "fastapi-limiter", specifier = ">=0.1.6" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain", specifier = ">=1.1.0" },
@@ -823,6 +823,14 @@ all = [
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "ujson" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+standard = [
+    { name = "email-validator" },
+    { name = "fastapi-cli", extra = ["standard"] },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
