@@ -47,13 +47,27 @@ def login_vendor_token(
     db: Session = Depends(get_db)
 ):
     vendor = auth_vendor.authenticate_vendor(
-    db, form_data.username, form_data.password, vendor_domain
-)
+        db, form_data.username, form_data.password, vendor_domain
+    )
     if not vendor:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth_vendor.create_access_token(data={"sub": vendor.email, "domain": vendor.domain})
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    access_token = auth_vendor.create_access_token(
+        data={"sub": vendor.email, "domain": vendor.domain}
+    )
+
+    # Return vendor object along with token
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "vendor": {
+            "id": vendor.id,
+            "email": vendor.email,
+            "domain": vendor.domain,
+            "role": vendor.role
+        }
+    }

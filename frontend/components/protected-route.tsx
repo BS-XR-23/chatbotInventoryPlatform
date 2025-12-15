@@ -1,34 +1,44 @@
 "use client"
 
-import type React from "react"
-
-import { useEffect } from "react"
+import { useEffect, useState, ReactNode } from "react"
 import { useRouter } from "next/navigation"
-import { isAuthenticated, getAuthUser } from "@/lib/auth"
+import { getAuthToken, getAuthUser } from "@/lib/auth"
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children: ReactNode
   allowedRoles?: string[]
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const router = useRouter()
-  const user = getAuthUser()
+  const [isReady, setIsReady] = useState(false)
+  const [isAuthorized, setIsAuthorized] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/login")
+    if (typeof window === "undefined") return
+
+    const token = getAuthToken()
+    const user = getAuthUser()
+
+    console.log("[ProtectedRoute] token:", token)
+    console.log("[ProtectedRoute] user:", user)
+
+    if (!token || !user) {
+      router.replace("/login")
       return
     }
 
-    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-      router.push("/login")
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      router.replace("/login")
+      return
     }
-  }, [router, user, allowedRoles])
 
-  if (!isAuthenticated() || (allowedRoles && user && !allowedRoles.includes(user.role))) {
-    return null
-  }
+    setIsAuthorized(true)
+    setIsReady(true)
+  }, [router, allowedRoles])
+
+  if (!isReady) return <p>Checking authentication...</p>
+  if (!isAuthorized) return null
 
   return <>{children}</>
 }

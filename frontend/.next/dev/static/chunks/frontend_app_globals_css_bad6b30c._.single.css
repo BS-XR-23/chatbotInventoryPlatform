@@ -85,7 +85,6 @@
     --container-md: 28rem;
     --container-lg: 32rem;
     --container-2xl: 42rem;
-    --container-3xl: 48rem;
     --text-xs: .75rem;
     --text-xs--line-height: calc(1 / .75);
     --text-sm: .875rem;
@@ -597,40 +596,6 @@
     grid-row-start: 1;
   }
 
-  .container {
-    width: 100%;
-  }
-
-  @media (min-width: 40rem) {
-    .container {
-      max-width: 40rem;
-    }
-  }
-
-  @media (min-width: 48rem) {
-    .container {
-      max-width: 48rem;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .container {
-      max-width: 64rem;
-    }
-  }
-
-  @media (min-width: 80rem) {
-    .container {
-      max-width: 80rem;
-    }
-  }
-
-  @media (min-width: 96rem) {
-    .container {
-      max-width: 96rem;
-    }
-  }
-
   .\!m-0 {
     margin: calc(var(--spacing) * 0) !important;
   }
@@ -685,10 +650,6 @@
 
   .mt-4 {
     margin-top: calc(var(--spacing) * 4);
-  }
-
-  .mt-6 {
-    margin-top: calc(var(--spacing) * 6);
   }
 
   .mt-auto {
@@ -942,10 +903,6 @@
     height: 1px;
   }
 
-  .h-screen {
-    height: 100vh;
-  }
-
   .h-svh {
     height: 100svh;
   }
@@ -1080,14 +1037,6 @@
 
   .max-w-2xl {
     max-width: var(--container-2xl);
-  }
-
-  .max-w-3xl {
-    max-width: var(--container-3xl);
-  }
-
-  .max-w-\[80\%\] {
-    max-width: 80%;
   }
 
   .max-w-\[calc\(100\%-2rem\)\] {
@@ -1398,12 +1347,6 @@
     gap: calc(var(--spacing) * 7);
   }
 
-  :where(.space-y-0 > :not(:last-child)) {
-    --tw-space-y-reverse: 0;
-    margin-block-start: calc(calc(var(--spacing) * 0) * var(--tw-space-y-reverse));
-    margin-block-end: calc(calc(var(--spacing) * 0) * calc(1 - var(--tw-space-y-reverse)));
-  }
-
   :where(.space-y-2 > :not(:last-child)) {
     --tw-space-y-reverse: 0;
     margin-block-start: calc(calc(var(--spacing) * 2) * var(--tw-space-y-reverse));
@@ -1468,6 +1411,10 @@
 
   .overflow-y-auto {
     overflow-y: auto;
+  }
+
+  .rounded {
+    border-radius: .25rem;
   }
 
   .rounded-\[2px\] {
@@ -1671,16 +1618,6 @@
 
   .bg-muted {
     background-color: var(--muted);
-  }
-
-  .bg-muted\/30 {
-    background-color: var(--muted);
-  }
-
-  @supports (color: color-mix(in lab, red, red)) {
-    .bg-muted\/30 {
-      background-color: color-mix(in oklab, var(--muted) 30%, transparent);
-    }
   }
 
   .bg-muted\/50 {
@@ -1902,10 +1839,6 @@
 
   .pr-8 {
     padding-right: calc(var(--spacing) * 8);
-  }
-
-  .pb-2 {
-    padding-bottom: calc(var(--spacing) * 2);
   }
 
   .pb-3 {
