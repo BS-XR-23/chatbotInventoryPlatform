@@ -1,6 +1,8 @@
 chatbotEnv/
 .venv/
 backend/app/.env
+/frontend/node_modules
+
 
 # Optional: If you add a global .env later, ignore all .env files
 # **/*.env
