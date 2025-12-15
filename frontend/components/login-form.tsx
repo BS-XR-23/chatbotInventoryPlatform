@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,17 +9,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { api } from "@/lib/api"
-import { saveAuthData } from "@/lib/auth"
+import { saveAuthData, User } from "@/lib/auth"
 import { Loader2 } from "lucide-react"
 
 export function LoginForm() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string
+    password: string
+    role: "admin" | "vendor" | "user"
+    vendor_domain: string
+  }>({
     email: "",
     password: "",
-    role: "user" as "admin" | "vendor" | "user",
+    role: "user",
     vendor_domain: "",
   })
 
@@ -29,52 +32,38 @@ export function LoginForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    console.log("[v0] Login attempt started", {
-      email: formData.email,
-      role: formData.role,
-      vendor_domain: formData.vendor_domain,
-      apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-    })
+    console.log("[Login] Attempting login with:", formData)
 
     try {
       const response = await api.login(formData)
+      console.log("[Login] Full response:", response)
 
-      console.log("[v0] Login response received", {
-        hasToken: !!response.access_token,
-        tokenType: response.token_type,
-        fullResponse: response,
-      })
+      // Build a strongly typed User object
+      const user: User = {
+        email: response.vendor?.email || formData.email,
+        role: response.vendor?.role as "admin" | "vendor" | "user" || formData.role,
+        vendor_domain: response.vendor?.domain || formData.vendor_domain,
+      }
 
-      saveAuthData(response.access_token, formData.role, formData.email, formData.vendor_domain)
+      saveAuthData(response.access_token, user)
+
+      console.log("[Login] Stored token:", localStorage.getItem("token"))
+      console.log("[Login] Stored user:", localStorage.getItem("user"))
 
       toast({
         title: "Login successful",
-        description: `Welcome back, ${formData.email}!`,
+        description: `Welcome back, ${user.email}!`,
       })
 
-      const redirectMap = {
-        admin: "/admin",
-        vendor: "/vendor",
-        user: "/chat",
-      }
-
-      console.log("[v0] Redirecting to", redirectMap[formData.role])
-      router.push(redirectMap[formData.role] || "/")
+      // Redirect according to role
+      if (user.role === "vendor") router.push("/vendor")
+      else if (user.role === "admin") router.push("/admin")
+      else router.push("/chat")
     } catch (error) {
-      console.error("[v0] Login error:", error)
-
-      let errorMessage = "Invalid credentials. Please check your email, password, and role."
-
-      if (error instanceof Error) {
-        errorMessage = error.message
-      }
-
-      console.log("[v0] Error message:", errorMessage)
-      console.log("[v0] Error details:", JSON.stringify(error, null, 2))
-
+      console.error("[Login] Error:", error)
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       })
     } finally {
@@ -117,7 +106,9 @@ export function LoginForm() {
             <Label htmlFor="role">Role</Label>
             <Select
               value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value as "admin" | "vendor" | "user" })}
+              onValueChange={(value) =>
+                setFormData({ ...formData, role: value as "admin" | "vendor" | "user" })
+              }
               disabled={isLoading}
             >
               <SelectTrigger id="role">

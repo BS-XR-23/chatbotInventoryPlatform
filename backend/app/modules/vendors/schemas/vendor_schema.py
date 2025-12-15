@@ -1,11 +1,12 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
-from core.enums import VendorStatus
+from core.enums import VendorStatus, UserRole
 
 class VendorBase(BaseModel):
     name: str
     email: EmailStr
     domain: str
+    role: UserRole = UserRole.vendor
     status: VendorStatus = VendorStatus.active
 
 class VendorCreate(VendorBase):

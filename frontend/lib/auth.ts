@@ -1,9 +1,7 @@
-// auth.ts
+// lib/auth.ts
 export interface User {
-  id: string
   email: string
-  role: string
-  name?: string
+  role: "admin" | "vendor" | "user"
   vendor_domain?: string
 }
 
@@ -12,17 +10,10 @@ export const AUTH_STORAGE_KEYS = {
   USER: "user",
 } as const
 
-export function saveAuthData(token: string, role: string, email: string, vendor_domain?: string): void {
+export function saveAuthData(token: string, user: User) {
   if (typeof window === "undefined") return
-
+  console.log("[Auth] Saving token and user:", token, user)
   localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token)
-
-  const user: User = {
-    id: "",
-    email,
-    role,
-    vendor_domain,
-  }
   localStorage.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(user))
 }
 
@@ -33,10 +24,8 @@ export function getAuthToken(): string | null {
 
 export function getAuthUser(): User | null {
   if (typeof window === "undefined") return null
-
   const userStr = localStorage.getItem(AUTH_STORAGE_KEYS.USER)
   if (!userStr) return null
-
   try {
     return JSON.parse(userStr)
   } catch {
@@ -44,9 +33,8 @@ export function getAuthUser(): User | null {
   }
 }
 
-export function clearAuthData(): void {
+export function clearAuthData() {
   if (typeof window === "undefined") return
-
   localStorage.removeItem(AUTH_STORAGE_KEYS.TOKEN)
   localStorage.removeItem(AUTH_STORAGE_KEYS.USER)
 }

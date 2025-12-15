@@ -505,243 +505,8 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
 }),
-"[project]/frontend/lib/api.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
-"use strict";
+"[project]/frontend/lib/api.ts [app-client] (ecmascript)", ((__turbopack_context__, module, exports) => {
 
-__turbopack_context__.s([
-    "api",
-    ()=>api
-]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/frontend/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:9000") || "http://127.0.0.1:9000";
-const getAuthHeaders = ()=>{
-    const token = ("TURBOPACK compile-time truthy", 1) ? localStorage.getItem("token") : "TURBOPACK unreachable";
-    return {
-        "Content-Type": "application/json",
-        ...token && {
-            Authorization: `Bearer ${token}`
-        }
-    };
-};
-const handleResponse = async (response)=>{
-    if (!response.ok) {
-        const error = await response.json().catch(()=>({
-                detail: "An error occurred"
-            }));
-        throw new Error(error.detail || `HTTP ${response.status}`);
-    }
-    return response.json();
-};
-const fetchAPI = async (endpoint, options = {})=>{
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            ...getAuthHeaders(),
-            ...options.headers
-        }
-    });
-    return handleResponse(response);
-};
-const api = {
-    // Authentication
-    login: async (credentials)=>{
-        let endpoint;
-        if (credentials.role === "admin") {
-            endpoint = `${API_BASE_URL}/admin/token`;
-        } else if (credentials.role === "user") {
-            endpoint = `${API_BASE_URL}/user/token`;
-        } else if (credentials.role === "vendor") {
-            if (!credentials.vendor_domain) {
-                throw new Error("Vendor domain is required for vendor login");
-            }
-            endpoint = `${API_BASE_URL}/${credentials.vendor_domain}`;
-        } else {
-            throw new Error("Invalid role");
-        }
-        const formData = new URLSearchParams();
-        formData.append("username", credentials.email);
-        formData.append("password", credentials.password);
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: formData.toString()
-        });
-        return handleResponse(response);
-    },
-    // Admin endpoints
-    createAdmin: (data)=>fetchAPI("/admins/create", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getAdmin: (adminId)=>fetchAPI(`/admins/me/${adminId}`),
-    updateAdmin: (adminId, data)=>fetchAPI(`/admins/edit/${adminId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    changeAdminPassword: (data)=>fetchAPI("/admins/change-password", {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    updateVendorStatus: (vendorId, data)=>fetchAPI(`/admins/update-vendors/${vendorId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    getAdminDocuments: ()=>fetchAPI("/admins/documents"),
-    duplicateChatbot: (chatbotId)=>fetchAPI(`/admins/chatbots/duplicate/${chatbotId}`, {
-            method: "POST"
-        }),
-    getMostUsersByVendors: ()=>fetchAPI("/admins/most-users-by-vendors"),
-    getMostChatbotsByVendors: ()=>fetchAPI("/admins/most-chatbots-by-vendors"),
-    getMostUsedChatbot: ()=>fetchAPI("/admins/most-used-chatbot"),
-    getTotalTokensByVendor: (vendorId)=>fetchAPI(`/admins/total-tokens/${vendorId}`),
-    // Vendor endpoints
-    createVendor: (data)=>fetchAPI("/vendors/create", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getAllVendors: ()=>fetchAPI("/vendors/all-vendors"),
-    getVendor: (vendorId)=>fetchAPI(`/vendors/${vendorId}`),
-    updateVendor: (vendorId, data)=>fetchAPI(`/vendors/update/${vendorId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    getVendorTopChatbotsByMessages: ()=>fetchAPI("/vendors/top-chatbots/messages"),
-    getVendorTopChatbotsByUsers: ()=>fetchAPI("/vendors/top-chatbots/users"),
-    getVendorDailyMessages: ()=>fetchAPI("/vendors/daily/messages"),
-    getVendorDailyUniqueUsers: ()=>fetchAPI("/vendors/daily/unique-users"),
-    getVendorUserTokensLast7Days: (userId)=>fetchAPI(`/vendors/user/${userId}/tokens-last7`),
-    getVendorUserTokensTotal: (userId)=>fetchAPI(`/vendors/user/${userId}/tokens-total`),
-    getVendorUserChatbotMessagesCount: (userId, chatbotId)=>fetchAPI(`/vendors/user/${userId}/chatbot/${chatbotId}/messages-count`),
-    // User endpoints
-    createUser: (data)=>fetchAPI("/users/create", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getUser: (userId)=>fetchAPI(`/users/${userId}`),
-    getVendorUsers: ()=>fetchAPI("/users/"),
-    updateUser: (userId, data)=>fetchAPI(`/users/update/${userId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteUser: (userId)=>fetchAPI(`/users/${userId}`, {
-            method: "DELETE"
-        }),
-    // Chatbot endpoints
-    createChatbot: (data)=>fetchAPI("/chatbots/", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getVendorChatbots: ()=>fetchAPI("/chatbots/"),
-    getAllChatbots: ()=>fetchAPI("/chatbots/"),
-    getChatbot: (chatbotId)=>fetchAPI(`/chatbots/${chatbotId}`),
-    updateChatbot: (chatbotId, data)=>fetchAPI(`/chatbots/${chatbotId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteChatbot: (chatbotId)=>fetchAPI(`/chatbots/${chatbotId}`, {
-            method: "DELETE"
-        }),
-    askChatbot: async (chatbotId, question)=>{
-        const response = await fetch(`${API_BASE_URL}/chatbots/${chatbotId}/ask`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                question
-            })
-        });
-        return response.json();
-    },
-    chatWithChatbot: (chatbotId, data)=>fetchAPI(`/chatbots/${chatbotId}/chat`, {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getGlobalTopChatbots: ()=>fetchAPI("/chatbots/global/top-chatbots"),
-    // Conversation endpoints
-    getUserConversations: ()=>fetchAPI("/conversations/"),
-    getUserChatbotConversations: (chatbotId)=>fetchAPI(`/conversations/${chatbotId}`),
-    deleteConversation: (conversationId)=>fetchAPI(`/conversations/${conversationId}`, {
-            method: "DELETE"
-        }),
-    // Document endpoints
-    previewDocument: (formData)=>{
-        const token = localStorage.getItem("token");
-        return fetch(`${API_BASE_URL}/documents/preview`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-            body: formData
-        }).then((res)=>res.json());
-    },
-    saveDocument: (formData)=>{
-        const token = localStorage.getItem("token");
-        return fetch(`${API_BASE_URL}/documents/add`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-            body: formData
-        }).then((res)=>res.json());
-    },
-    getDocuments: ()=>fetchAPI("/documents/"),
-    getDocument: (documentId)=>fetchAPI(`/documents/${documentId}`),
-    updateDocument: (documentId, data)=>fetchAPI(`/documents/${documentId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteDocument: (documentId)=>fetchAPI(`/documents/${documentId}`, {
-            method: "DELETE"
-        }),
-    createKnowledgeBase: (documentId)=>fetchAPI(`/documents/${documentId}/knowledge-base`, {
-            method: "POST"
-        }),
-    // LLM endpoints
-    createLLM: (data)=>fetchAPI("/llms/", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getLLMs: ()=>fetchAPI("/llms/"),
-    getLLM: (llmId)=>fetchAPI(`/llms/${llmId}`),
-    updateLLM: (llmId, data)=>fetchAPI(`/llms/${llmId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteLLM: (llmId)=>fetchAPI(`/llms/${llmId}`, {
-            method: "DELETE"
-        }),
-    // Embedding endpoints
-    createEmbedding: (data)=>fetchAPI("/embeddings/create", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getEmbeddings: ()=>fetchAPI("/embeddings/"),
-    getEmbedding: (embeddingId)=>fetchAPI(`/embeddings/${embeddingId}`),
-    updateEmbedding: (embeddingId, data)=>fetchAPI(`/embeddings/update/${embeddingId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteEmbedding: (embeddingId)=>fetchAPI(`/embeddings/delete/${embeddingId}`, {
-            method: "DELETE"
-        }),
-    // API Keys endpoints
-    createAPIKey: (data)=>fetchAPI("/api-keys/", {
-            method: "POST",
-            body: JSON.stringify(data)
-        }),
-    getAPIKeys: ()=>fetchAPI("/api-keys/"),
-    getAPIKey: (keyId)=>fetchAPI(`/api-keys/${keyId}`),
-    updateAPIKey: (keyId, data)=>fetchAPI(`/api-keys/${keyId}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-        }),
-    deleteAPIKey: (keyId)=>fetchAPI(`/api-keys/${keyId}`, {
-            method: "DELETE"
-        })
-};
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
@@ -749,7 +514,7 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
 "[project]/frontend/lib/auth.ts [app-client] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
-// auth.ts
+// lib/auth.ts
 __turbopack_context__.s([
     "AUTH_STORAGE_KEYS",
     ()=>AUTH_STORAGE_KEYS,
@@ -768,16 +533,10 @@ const AUTH_STORAGE_KEYS = {
     TOKEN: "token",
     USER: "user"
 };
-function saveAuthData(token, role, email, vendor_domain) {
+function saveAuthData(token, user) {
     if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
     ;
     localStorage.setItem(AUTH_STORAGE_KEYS.TOKEN, token);
-    const user = {
-        id: "",
-        email,
-        role,
-        vendor_domain
-    };
     localStorage.setItem(AUTH_STORAGE_KEYS.USER, JSON.stringify(user));
 }
 function getAuthToken() {
@@ -816,7 +575,6 @@ __turbopack_context__.s([
     "LoginForm",
     ()=>LoginForm
 ]);
-var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/frontend/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/frontend/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/frontend/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/frontend/node_modules/next/navigation.js [app-client] (ecmascript)");
@@ -857,42 +615,30 @@ function LoginForm() {
     const handleSubmit = async (e)=>{
         e.preventDefault();
         setIsLoading(true);
-        console.log("[v0] Login attempt started", {
-            email: formData.email,
-            role: formData.role,
-            vendor_domain: formData.vendor_domain,
-            apiBaseUrl: ("TURBOPACK compile-time value", "http://localhost:9000")
-        });
         try {
             const response = await __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$lib$2f$api$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["api"].login(formData);
-            console.log("[v0] Login response received", {
-                hasToken: !!response.access_token,
-                tokenType: response.token_type,
-                fullResponse: response
-            });
-            (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$lib$2f$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["saveAuthData"])(response.access_token, formData.role, formData.email, formData.vendor_domain);
+            // Assuming backend returns vendor/user object
+            const user = {
+                email: formData.email,
+                role: formData.role,
+                vendor_domain: formData.vendor_domain || undefined
+            };
+            (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$lib$2f$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["saveAuthData"])(response.access_token, user);
             toast({
                 title: "Login successful",
                 description: `Welcome back, ${formData.email}!`
             });
+            // Redirect immediately based on role
             const redirectMap = {
                 admin: "/admin",
                 vendor: "/vendor",
                 user: "/chat"
             };
-            console.log("[v0] Redirecting to", redirectMap[formData.role]);
             router.push(redirectMap[formData.role] || "/");
         } catch (error) {
-            console.error("[v0] Login error:", error);
-            let errorMessage = "Invalid credentials. Please check your email, password, and role.";
-            if (error instanceof Error) {
-                errorMessage = error.message;
-            }
-            console.log("[v0] Error message:", errorMessage);
-            console.log("[v0] Error details:", JSON.stringify(error, null, 2));
             toast({
                 title: "Login failed",
-                description: errorMessage,
+                description: error?.message || "Invalid credentials",
                 variant: "destructive"
             });
         } finally{
@@ -909,20 +655,20 @@ function LoginForm() {
                         children: "Login"
                     }, void 0, false, {
                         fileName: "[project]/frontend/components/login-form.tsx",
-                        lineNumber: 88,
+                        lineNumber: 70,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
                         children: "Enter your credentials to access your account"
                     }, void 0, false, {
                         fileName: "[project]/frontend/components/login-form.tsx",
-                        lineNumber: 89,
+                        lineNumber: 71,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/frontend/components/login-form.tsx",
-                lineNumber: 87,
+                lineNumber: 69,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -938,7 +684,7 @@ function LoginForm() {
                                     children: "Email"
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 94,
+                                    lineNumber: 76,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -954,13 +700,13 @@ function LoginForm() {
                                     disabled: isLoading
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 95,
+                                    lineNumber: 77,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/frontend/components/login-form.tsx",
-                            lineNumber: 93,
+                            lineNumber: 75,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -971,7 +717,7 @@ function LoginForm() {
                                     children: "Password"
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 106,
+                                    lineNumber: 88,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -986,13 +732,13 @@ function LoginForm() {
                                     disabled: isLoading
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 107,
+                                    lineNumber: 89,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/frontend/components/login-form.tsx",
-                            lineNumber: 105,
+                            lineNumber: 87,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1003,7 +749,7 @@ function LoginForm() {
                                     children: "Role"
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 117,
+                                    lineNumber: 99,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Select"], {
@@ -1020,12 +766,12 @@ function LoginForm() {
                                                 placeholder: "Select your role"
                                             }, void 0, false, {
                                                 fileName: "[project]/frontend/components/login-form.tsx",
-                                                lineNumber: 124,
+                                                lineNumber: 108,
                                                 columnNumber: 17
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/frontend/components/login-form.tsx",
-                                            lineNumber: 123,
+                                            lineNumber: 107,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -1035,7 +781,7 @@ function LoginForm() {
                                                     children: "User"
                                                 }, void 0, false, {
                                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                                    lineNumber: 127,
+                                                    lineNumber: 111,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1043,7 +789,7 @@ function LoginForm() {
                                                     children: "Vendor"
                                                 }, void 0, false, {
                                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                                    lineNumber: 128,
+                                                    lineNumber: 112,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1051,25 +797,25 @@ function LoginForm() {
                                                     children: "Admin"
                                                 }, void 0, false, {
                                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                                    lineNumber: 129,
+                                                    lineNumber: 113,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/frontend/components/login-form.tsx",
-                                            lineNumber: 126,
+                                            lineNumber: 110,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 118,
+                                    lineNumber: 100,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/frontend/components/login-form.tsx",
-                            lineNumber: 116,
+                            lineNumber: 98,
                             columnNumber: 11
                         }, this),
                         formData.role === "vendor" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1080,7 +826,7 @@ function LoginForm() {
                                     children: "Vendor Domain"
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 135,
+                                    lineNumber: 119,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$input$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Input"], {
@@ -1096,13 +842,13 @@ function LoginForm() {
                                     disabled: isLoading
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 136,
+                                    lineNumber: 120,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/frontend/components/login-form.tsx",
-                            lineNumber: 134,
+                            lineNumber: 118,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$frontend$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -1114,31 +860,31 @@ function LoginForm() {
                                     className: "mr-2 h-4 w-4 animate-spin"
                                 }, void 0, false, {
                                     fileName: "[project]/frontend/components/login-form.tsx",
-                                    lineNumber: 148,
+                                    lineNumber: 132,
                                     columnNumber: 27
                                 }, this),
                                 isLoading ? "Logging in..." : "Login"
                             ]
                         }, void 0, true, {
                             fileName: "[project]/frontend/components/login-form.tsx",
-                            lineNumber: 147,
+                            lineNumber: 131,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/frontend/components/login-form.tsx",
-                    lineNumber: 92,
+                    lineNumber: 74,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/frontend/components/login-form.tsx",
-                lineNumber: 91,
+                lineNumber: 73,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/frontend/components/login-form.tsx",
-        lineNumber: 86,
+        lineNumber: 68,
         columnNumber: 5
     }, this);
 }
@@ -1625,12 +1371,12 @@ function LoginPage() {
                         children: isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"
                     }, void 0, false, {
                         fileName: "[project]/frontend/app/login/page.tsx",
-                        lineNumber: 17,
+                        lineNumber: 16,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/frontend/app/login/page.tsx",
-                    lineNumber: 16,
+                    lineNumber: 15,
                     columnNumber: 9
                 }, this)
             ]
