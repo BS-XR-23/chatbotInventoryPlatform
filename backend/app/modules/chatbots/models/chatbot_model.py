@@ -13,17 +13,16 @@ class Chatbot(Base):
     system_prompt = Column(Text, nullable=True)
     llm_id = Column(Integer, ForeignKey("llms.id"))
     llm_path = Column(String, nullable=False) 
-    vector_db = Column(String, nullable=True)
     mode = Column(Enum(ChatbotMode), default=ChatbotMode.private)
     is_active = Column(Boolean, default=True)
-    token_limit = Column(Integer, nullable=False)
-    context_limit = Column(Integer, nullable=False)
 
     vendor = relationship("Vendor", back_populates="chatbots")
     llm = relationship("LLM", back_populates="chatbots")
     documents = relationship("Document", back_populates="chatbot", cascade="all, delete-orphan")
     messages = relationship("Conversation", back_populates="chatbot", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="chatbot", cascade="all, delete-orphan")
+    vector_dbs = relationship("VectorDB", back_populates="chatbot")
+
 
 
 

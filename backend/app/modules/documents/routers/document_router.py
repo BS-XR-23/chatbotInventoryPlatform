@@ -9,30 +9,27 @@ from modules.auth.vendors.auth_vendor import get_current_vendor
 
 router = APIRouter(tags=["Documents"])
 
-@router.post("/preview", response_model=DocumentCreate)
-def preview_document(
-    db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(get_current_vendor),
-    file: UploadFile = File(...),
-    vendor_id: int = Form(...),
-    chatbot_id: int = Form(...)
-):
-   
-    return document_service.add_document(db,  file, vendor_id, chatbot_id)
-
-
-@router.post("/add", response_model=DocumentRead)
-def save_document_endpoint(
-    title: str = Form(...),
-    summary: str = Form(...),
-    tags: str = Form(...),
-    file: UploadFile = File(...),
-    vendor_id: int = Form(...),
-    chatbot_id: int = Form(...),
+@router.post("/chatbots/{chatbot_id}/documents", response_model=List[DocumentRead])
+def upload_documents(
+    chatbot_id: int,
+    files: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor)
 ):
-    return document_service.save_document(db, vendor_id, chatbot_id, title, summary, tags, file)
+    # 1. Save documents
+    saved_docs = document_service.create_documents_bulk(db, current_vendor.id, chatbot_id, files)
+
+    # 2. Embed each document automatically
+    for doc in saved_docs:
+        try:
+            vector_db = document_service.embed_document(db, doc.id)
+            doc.status = "embedded"
+        except Exception as e:
+            doc.status = "processing_failed"
+            # optionally log the error
+
+    db.commit()
+    return saved_docs
 
 
 @router.get("/", response_model=List[DocumentRead])
@@ -60,10 +57,14 @@ def delete_document(document_id: int, db: Session = Depends(get_db), current_ven
         raise HTTPException(status_code=404, detail="Document not found")
     return {"detail": "Document deleted successfully"}
 
-@router.post("/{document_id}/knowledge-base")
-def create_knowledgebase(document_id: int, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
+@router.post("/documents/{document_id}/knowledge-base")
+def embed_document_endpoint(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor)
+):
     try:
-        vectordb = document_service.embed_document(db, document_id)
+        vector_db = document_service.embed_document(db, document_id)
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -71,7 +72,8 @@ def create_knowledgebase(document_id: int, db: Session = Depends(get_db), curren
 
     return {
         "document_id": document_id,
-        "vector_db_type": vectordb.__class__.__name__,
+        "vector_db_id": vector_db.id,
+        "vector_db_type": vector_db.db_path.split("://")[0],
         "message": "Document embedding completed successfully"
     }
 

@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/BS23-DESKTOP-00038/Projects/chatbot/chatbotInventoryPlatform/frontend/proxy.ts"],"sourcesContent":["import { NextResponse } from \"next/server\"\nimport type { NextRequest } from \"next/server\"\n\nexport function proxy(request: NextRequest) {\n  const token = request.cookies.get(\"token\")?.value\n\n  // Protected routes\n  const protectedPaths = [\"/admin\", \"/vendor\", \"/chat\"]\n  const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path))\n\n  if (isProtectedPath && !token) {\n    return NextResponse.redirect(new URL(\"/login\", request.url))\n  }\n\n  return NextResponse.next()\n}\n\nexport const config = {\n  matcher: [\"/admin/:path*\", \"/vendor/:path*\", \"/chat/:path*\"],\n}\n"],"names":[],"mappings":";;;;;;AAAA;;AAGO,SAAS,MAAM,OAAoB;IACxC,MAAM,QAAQ,QAAQ,OAAO,CAAC,GAAG,CAAC,UAAU;IAE5C,mBAAmB;IACnB,MAAM,iBAAiB;QAAC;QAAU;QAAW;KAAQ;IACrD,MAAM,kBAAkB,eAAe,IAAI,CAAC,CAAC,OAAS,QAAQ,OAAO,CAAC,QAAQ,CAAC,UAAU,CAAC;IAE1F,IAAI,mBAAmB,CAAC,OAAO;QAC7B,OAAO,0JAAY,CAAC,QAAQ,CAAC,IAAI,IAAI,UAAU,QAAQ,GAAG;IAC5D;IAEA,OAAO,0JAAY,CAAC,IAAI;AAC1B;AAEO,MAAM,SAAS;IACpB,SAAS;QAAC;QAAiB;QAAkB;KAAe;AAC9D"}}]
-}

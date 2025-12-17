@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import uuid4
@@ -8,15 +8,39 @@ from modules.chatbots.services import chatbot_service
 from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
 from modules.users.models.user_model import User
+from core.enums import ChatbotMode
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.users.auth_user import get_current_user
 
 
 router = APIRouter(tags=["Chatbots"])
 
-@router.post("/", response_model=ChatbotRead)
-def create_chatbot(chatbot: ChatbotCreate, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
-    return chatbot_service.create_chatbot(db, chatbot)
+
+@router.post("/create", response_model=ChatbotRead)
+def create_chatbot_endpoint(
+    name: str = Form(...),
+    description: str = Form(None),
+    system_prompt: str = Form(None),
+    llm_id: int = Form(...),
+    llm_path: str = Form(...),
+    mode: ChatbotMode = Form(ChatbotMode.private),
+    files: List[UploadFile] = File([]),  
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor)
+):
+   
+    chatbot = chatbot_service.create_chatbot_with_documents(
+        db=db,
+        vendor_id=current_vendor.id,
+        name=name,
+        description=description,
+        system_prompt=system_prompt or "",
+        llm_id=llm_id,
+        llm_path=llm_path,
+        mode=mode,
+        files=files
+    )
+    return chatbot
 
 @router.get("/", response_model=List[ChatbotRead])
 def get_vendor_chatbots(db: Session = Depends(get_db),  current_vendor: Vendor = Depends(get_current_vendor)):
