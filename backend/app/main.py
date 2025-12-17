@@ -12,6 +12,7 @@ from modules.llms.routers import llm_router
 from modules.embeddings.routers import embedding_router
 from modules.auth.routers import auth_router
 from modules.admins.routers import admin_router
+from modules.vector_dbs.routers import vector_db_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -24,7 +25,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +41,7 @@ app.include_router(llm_router.router, prefix="/llms", tags=["LLMs"])
 app.include_router(embedding_router.router, prefix="/embeddings", tags=["Embeddings"])
 app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
+app.include_router(vector_db_router.router, prefix="/vector_dbs", tags=["VectorDBs"])
 
 
 if __name__ == "__main__":

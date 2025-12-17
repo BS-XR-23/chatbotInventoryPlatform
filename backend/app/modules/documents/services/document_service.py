@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from datetime import datetime
 from typing import List
 from pathlib import Path
 import uuid, shutil
@@ -9,7 +10,8 @@ from modules.rag.services import rag_service
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.llms.models.llm_model import LLM
 from modules.embeddings.models.embedding_model import Embedding
-from utils.ai_summarizer import summarize_documents_generate_tags
+from modules.vector_dbs.models.vector_db_model import VectorDB
+# from utils.ai_summarizer import summarize_documents_generate_tags
 
 UPLOAD_DIR = Path("temp_uploads")
 UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
@@ -17,57 +19,41 @@ UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
 PERMANENT_UPLOAD_DIR = Path("uploads/documents")
 PERMANENT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+def create_documents_bulk(
+    db: Session,
+    vendor_id: int,
+    chatbot_id: int,
+    files: List[UploadFile]
+) -> List[Document]:
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
 
-def add_document(db: Session, file, vendor_id: int, chatbot_id: int) -> DocumentCreate:
-    """
-    Save file temporarily, generate summary and tags.
-    """
-    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
-    temp_file_path = UPLOAD_DIR / unique_filename
-    with open(temp_file_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    saved_documents = []
+    upload_dir = PERMANENT_UPLOAD_DIR / str(vendor_id) / str(chatbot_id)
+    upload_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        ai_summary, ai_tags = summarize_documents_generate_tags(db, chatbot_id,temp_file_path)
-        preview_data = DocumentCreate(
+    for file in files:
+        unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+        file_path = upload_dir / unique_filename
+
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+        doc = Document(
+            vendor_id=vendor_id,
+            chatbot_id=chatbot_id,
             title=file.filename,
-            summary=ai_summary,
-            tags=ai_tags,
-            file_path=str(temp_file_path),
-            status="processing"
+            file_path=str(file_path),
+            status="processing"  
         )
-    finally:
-        pass
+        db.add(doc)
+        saved_documents.append(doc)
 
-    return preview_data
-
-
-
-def save_document(db: Session, vendor_id: int, chatbot_id: int, title: str, summary: str, tags: str, file):
-
-    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
-    final_file_path = PERMANENT_UPLOAD_DIR / unique_filename
-
-    # Save file
-    with open(final_file_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    # Save record in DB
-    db_document = Document(
-        vendor_id=vendor_id,
-        chatbot_id=chatbot_id,
-        title=title,
-        summary=summary,
-        tags=tags,
-        file_path=str(final_file_path),
-        status="success"
-    )
-
-    db.add(db_document)
     db.commit()
-    db.refresh(db_document)
+    for doc in saved_documents:
+        db.refresh(doc)
 
-    return db_document
+    return saved_documents
 
 def get_documents(db: Session) -> List[Document]:
     return db.query(Document).all()
@@ -93,7 +79,7 @@ def delete_document(db: Session, document_id: int) -> bool:
     db.commit()
     return True
 
-def embed_document(db: Session, document_id: int):
+def embed_document(db: Session, document_id: int) -> VectorDB:
 
     document_obj = db.query(Document).filter(Document.id == document_id).first()
     if not document_obj:
@@ -120,9 +106,26 @@ def embed_document(db: Session, document_id: int):
     if not document_list:
         raise HTTPException(status_code=404, detail="No documents found for this chatbot")
 
-    vectordb = rag_service.embedd_document(db, chatbot_id, embedd_obj, document_list)
+    vectordb_obj = rag_service.embedd_document(db, chatbot_id, embedd_obj, document_list)
 
-    return vectordb
+    existing_count = db.query(VectorDB).filter(VectorDB.chatbot_id == chatbot.id).count()
+    vector_db_name = f"{chatbot.name}_vdb_{existing_count + 1}"
+
+    vector_db = VectorDB(
+        chatbot_id=chatbot.id,
+        name=vector_db_name,
+        db_path=vectordb_obj.persist_path,
+        is_active=True
+    )
+    db.add(vector_db)
+    db.commit()
+    db.refresh(vector_db)
+
+    for doc in document_list:
+        doc.status = "embedded"
+    db.commit()
+
+    return vector_db
 
 
 

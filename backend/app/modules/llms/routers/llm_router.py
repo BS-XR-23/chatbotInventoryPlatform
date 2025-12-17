@@ -17,7 +17,7 @@ def create_llm(data: LLMCreate, db: Session = Depends(get_db), current_admin: Ad
 
 
 @router.get("/", response_model=List[LLMRead])
-def list_llms(db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
+def list_llms(db: Session = Depends(get_db)):
     return llm_service.get_llms(db)
 
 
