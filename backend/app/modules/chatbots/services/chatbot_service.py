@@ -7,6 +7,7 @@ from sqlalchemy import func
 from typing import List, Optional
 from uuid import uuid4
 from core.enums import SenderType, ChatbotMode
+from core.enums import VectorStoreType, DocumentStatus
 from modules.api_keys.models.api_model import APIKey
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
@@ -15,20 +16,24 @@ from modules.vendors.models.vendor_model import Vendor
 from modules.vector_dbs.models.vector_db_model import VectorDB
 from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotUpdate, ChatbotRead
 from modules.rag.services import rag_service
-from modules.documents.services.document_service import create_documents_bulk
+from modules.chatbots.services import chatbot_service
+from modules.documents.services.document_service import create_documents_bulk, embed_document
 
 
 def create_chatbot_with_documents(
-    db: Session,
+    db,
     vendor_id: int,
     name: str,
     description: str,
     system_prompt: str,
     llm_id: int,
     llm_path: str,
-    mode: ChatbotMode,
-    files: List[UploadFile] = None
-) -> Chatbot:
+    mode,
+    vector_store_type: VectorStoreType,
+    vector_store_config: dict | None = None,
+    files: list[UploadFile] | None = None
+):
+    # 1️⃣ Create Chatbot
     chatbot = Chatbot(
         vendor_id=vendor_id,
         name=name,
@@ -37,16 +42,30 @@ def create_chatbot_with_documents(
         llm_id=llm_id,
         llm_path=llm_path,
         mode=mode,
-    
+        vector_store_type=vector_store_type,
+        vector_store_config=vector_store_config,
+        is_active=True
     )
     db.add(chatbot)
     db.commit()
-    db.refresh(chatbot)  # chatbot.id is now available
+    db.refresh(chatbot)
 
+    saved_docs = []
     if files:
-        create_documents_bulk(db, vendor_id, chatbot.id, files)
+        saved_docs = create_documents_bulk(db, vendor_id, chatbot.id, files)
+
+    if saved_docs:
+        try:
+            # embed only the first document, or loop if you want multiple
+            embed_document(db, saved_docs[0].id)
+        except Exception as e:
+            for doc in saved_docs:
+                doc.status = DocumentStatus.processing_failed  # use the correct enum member
+            db.commit()
+            raise e
 
     return chatbot
+
 
 def get_chatbots(db: Session) -> List[Chatbot]:
     return db.query(Chatbot).all()
@@ -57,18 +76,44 @@ def get_vendor_chatbots(db: Session, vendor_id: int) -> List[Chatbot]:
 def get_chatbot(db: Session, chatbot_id: int) -> Chatbot:
     return db.query(Chatbot).get(chatbot_id)
 
-def update_chatbot(db: Session, chatbot_id: int, chatbot_data: ChatbotUpdate) -> Chatbot:
+def update_chatbot_with_documents(
+    db: Session,
+    chatbot_id: int,
+    chatbot_data: ChatbotUpdate,
+    files: list[UploadFile] | None = None
+) -> Chatbot:
     chatbot = db.query(Chatbot).get(chatbot_id)
     if not chatbot:
         return None
 
-    update_data = chatbot_data.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(chatbot, key, value)
+    # Update chatbot fields
+    chatbot.name = chatbot_data.name or chatbot.name
+    chatbot.description = chatbot_data.description or chatbot.description
+    chatbot.system_prompt = chatbot_data.system_prompt or chatbot.system_prompt
+    chatbot.llm_id = chatbot_data.llm_id or chatbot.llm_id
+    chatbot.llm_path = chatbot_data.llm_path or chatbot.llm_path
+    chatbot.mode = chatbot_data.mode or chatbot.mode
+    chatbot.vector_store_type = chatbot_data.vector_store_type or chatbot.vector_store_type
+    chatbot.vector_store_config = chatbot_data.vector_store_config or chatbot.vector_store_config
+    chatbot.is_active = chatbot_data.is_active if chatbot_data.is_active is not None else chatbot.is_active
 
     db.add(chatbot)
     db.commit()
     db.refresh(chatbot)
+
+    # Handle new documents only if provided
+    if files:
+        saved_docs = create_documents_bulk(db, chatbot.vendor_id, chatbot.id, files)
+        if saved_docs:
+            try:
+                # embed first document (or loop if you want multiple)
+                embed_document(db, saved_docs[0].id)
+            except Exception as e:
+                for doc in saved_docs:
+                    doc.status = DocumentStatus.processing_failed
+                db.commit()
+                raise e
+
     return chatbot
 
 
@@ -81,10 +126,6 @@ def delete_chatbot(db: Session, chatbot_id: int) -> bool:
     return True
 
 def get_latest_vector_db(chatbot: Chatbot) -> Optional[VectorDB]:
-    """
-    Returns the most recently updated active VectorDB
-    for the given chatbot.
-    """
     active_vdbs = [vdb for vdb in chatbot.vector_dbs if vdb.is_active]
     if not active_vdbs:
         return None
@@ -93,6 +134,13 @@ def get_latest_vector_db(chatbot: Chatbot) -> Optional[VectorDB]:
         active_vdbs,
         key=lambda v: (v.updated_at or v.created_at)
     )
+
+def get_chatbots_for_user(db: Session, user_id: int):
+
+    chatbot_ids = db.query(Conversation.chatbot_id).filter(Conversation.user_id == user_id).distinct().all()
+    chatbot_ids = [c[0] for c in chatbot_ids]  # extract IDs
+
+    return db.query(Chatbot).filter(Chatbot.id.in_(chatbot_ids)).all()
 
 def handle_conversation_singleturn(
     db: Session,
@@ -119,7 +167,7 @@ def handle_conversation_singleturn(
         temperature=0.7,
     )
 
-    vector_db_obj = get_latest_vector_db()
+    vector_db_obj = chatbot_service.get_latest_vector_db()
     if not vector_db_obj:
         raise HTTPException(status_code=404, detail="No active VectorDB found for this chatbot")
 
@@ -227,9 +275,7 @@ def handle_conversation_multiturn(
         else:
             messages.append(AIMessage(content=msg.content))
 
-    from services.chatbot_service import get_latest_vector_db
-
-    vector_db_obj = get_latest_vector_db(chatbot)
+    vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
     if not vector_db_obj:
         raise HTTPException(
             status_code=404,

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException,UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 from db.database import get_db
 from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotRead, ChatbotUpdate
@@ -8,36 +8,47 @@ from modules.chatbots.services import chatbot_service
 from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
 from modules.users.models.user_model import User
-from core.enums import ChatbotMode
+from core.enums import ChatbotMode, VectorStoreType
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.users.auth_user import get_current_user
 
 
 router = APIRouter(tags=["Chatbots"])
 
-
 @router.post("/create", response_model=ChatbotRead)
 def create_chatbot_endpoint(
     name: str = Form(...),
-    description: str = Form(None),
-    system_prompt: str = Form(None),
+    description: Optional[str] = Form(None),
+    system_prompt: Optional[str] = Form(None),
     llm_id: int = Form(...),
     llm_path: str = Form(...),
     mode: ChatbotMode = Form(ChatbotMode.private),
+    vector_store_type: VectorStoreType = Form(VectorStoreType.chroma),  
+    vector_store_config: Optional[str] = Form(None), 
     files: List[UploadFile] = File([]),  
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor)
 ):
-   
+
+    config_dict = None
+    if vector_store_config:
+        import json
+        try:
+            config_dict = json.loads(vector_store_config)
+        except json.JSONDecodeError:
+            raise ValueError("vector_store_config must be valid JSON")
+
     chatbot = chatbot_service.create_chatbot_with_documents(
         db=db,
         vendor_id=current_vendor.id,
         name=name,
-        description=description,
+        description=description or "",
         system_prompt=system_prompt or "",
         llm_id=llm_id,
         llm_path=llm_path,
         mode=mode,
+        vector_store_type=vector_store_type,
+        vector_store_config=config_dict,
         files=files
     )
     return chatbot
@@ -58,11 +69,55 @@ def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Chatbot not found")
     return chatbot
 
+@router.get("/user", response_model=List[ChatbotRead])  
+def get_chatbots_for_current_user(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    return chatbot_service.get_chatbots_for_user(db, current_user.id)
+
 @router.put("/{chatbot_id}", response_model=ChatbotRead)
-def update_chatbot(chatbot_id: int, chatbot_data: ChatbotUpdate, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
-    chatbot = chatbot_service.update_chatbot(db, chatbot_id, chatbot_data)
+async def update_chatbot_endpoint(
+    chatbot_id: int,
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    system_prompt: Optional[str] = Form(None),
+    llm_id: int = Form(...),
+    llm_path: str = Form(...),
+    mode: ChatbotMode = Form(ChatbotMode.private),
+    vector_store_type: VectorStoreType = Form(VectorStoreType.chroma),  
+    vector_store_config: Optional[str] = Form(None), 
+    files: List[UploadFile] = File([]),  # optional files
+    db: Session = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor)
+):
+    import json
+    config_dict = None
+    if vector_store_config:
+        try:
+            config_dict = json.loads(vector_store_config)
+        except json.JSONDecodeError:
+            raise ValueError("vector_store_config must be valid JSON")
+
+    chatbot_data = ChatbotUpdate(
+        name=name,
+        description=description or "",
+        system_prompt=system_prompt or "",
+        llm_id=llm_id,
+        llm_path=llm_path,
+        mode=mode,
+        vector_store_type=vector_store_type,
+        vector_store_config=config_dict,
+        is_active=True
+    )
+
+    chatbot = chatbot_service.update_chatbot_with_documents(
+        db=db,
+        chatbot_id=chatbot_id,
+        chatbot_data=chatbot_data,
+        files=files if files else None
+    )
+
     if not chatbot:
         raise HTTPException(status_code=404, detail="Chatbot not found")
+
     return chatbot
 
 @router.delete("/{chatbot_id}")

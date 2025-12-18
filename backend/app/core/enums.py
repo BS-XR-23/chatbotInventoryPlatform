@@ -21,8 +21,8 @@ class VendorStatus(str, enum.Enum):
 
 class DocumentStatus(str, enum.Enum):
     processing = "processing"
-    ready = "success"
-    failed = "failed"
+    embedded = "embedded"
+    processing_failed = "processing_failed"
 
 class ChatbotMode(str, enum.Enum):
     private = "private"
@@ -48,3 +48,10 @@ class EmbeddingProvider(str, enum.Enum):
     huggingface = "huggingface"
     ollama = "ollama"
     local = "local"
+
+class VectorStoreType(str, enum.Enum):
+    chroma = "chroma"
+    qdrant = "qdrant"
+    pinecone = "pinecone"
+    weaviate = "weaviate"
+    pgvector = "pgvector"
