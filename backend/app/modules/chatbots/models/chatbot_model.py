@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from db.database import Base
-from core.enums import ChatbotMode
+from core.enums import ChatbotMode, VectorStoreType
 
 class Chatbot(Base):
     __tablename__ = "chatbots"
@@ -15,13 +15,20 @@ class Chatbot(Base):
     llm_path = Column(String, nullable=False) 
     mode = Column(Enum(ChatbotMode), default=ChatbotMode.private)
     is_active = Column(Boolean, default=True)
+    vector_store_type = Column(
+        Enum(VectorStoreType, native_enum=False),
+        default=VectorStoreType.chroma,
+        nullable=False
+    )
+
+    vector_store_config = Column(JSON, nullable=True)
 
     vendor = relationship("Vendor", back_populates="chatbots")
     llm = relationship("LLM", back_populates="chatbots")
     documents = relationship("Document", back_populates="chatbot", cascade="all, delete-orphan")
     messages = relationship("Conversation", back_populates="chatbot", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="chatbot", cascade="all, delete-orphan")
-    vector_dbs = relationship("VectorDB", back_populates="chatbot")
+    vector_dbs = relationship("VectorDB", back_populates="chatbot", cascade="all, delete-orphan")
 
 
 

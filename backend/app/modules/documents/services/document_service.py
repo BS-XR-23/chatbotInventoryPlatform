@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from pathlib import Path
 import uuid, shutil
+from core.enums import DocumentStatus
 from modules.documents.models.document_model import Document
 from modules.documents.schemas.document_schema import DocumentCreate
 from modules.rag.services import rag_service
@@ -79,53 +80,61 @@ def delete_document(db: Session, document_id: int) -> bool:
     db.commit()
     return True
 
+
 def embed_document(db: Session, document_id: int) -> VectorDB:
+    try:
+        # Fetch the document
+        document_obj = db.query(Document).filter(Document.id == document_id).first()
+        if not document_obj:
+            raise HTTPException(status_code=404, detail="Document not found")
 
-    document_obj = db.query(Document).filter(Document.id == document_id).first()
-    if not document_obj:
-        raise HTTPException(status_code=404, detail="Document not found")
+        chatbot = db.query(Chatbot).filter(
+            Chatbot.id == document_obj.chatbot_id,
+            Chatbot.is_active == True
+        ).first()
+        if not chatbot:
+            raise HTTPException(status_code=404, detail="Associated chatbot not found or inactive")
 
-    chatbot_id = document_obj.chatbot_id
+        llm_obj = db.query(LLM).filter(LLM.id == chatbot.llm_id).first()
+        if not llm_obj:
+            raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
 
-    chatbot = db.query(Chatbot).filter(
-        Chatbot.id == chatbot_id,
-        Chatbot.is_active == True
-    ).first()
-    if not chatbot:
-        raise HTTPException(status_code=404, detail="Associated chatbot not found or inactive")
+        embedd_obj = db.query(Embedding).filter(Embedding.id == llm_obj.embedding_id).first()
+        if not embedd_obj:
+            raise HTTPException(status_code=404, detail="Embedding not found for this LLM")
 
-    llm_obj = db.query(LLM).filter(LLM.id == chatbot.llm_id).first()
-    if not llm_obj:
-        raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
+        document_list = db.query(Document).filter(Document.chatbot_id == chatbot.id).all()
+        if not document_list:
+            raise HTTPException(status_code=404, detail="No documents found for this chatbot")
 
-    embedd_obj = db.query(Embedding).filter(Embedding.id == llm_obj.embedding_id).first()
-    if not embedd_obj:
-        raise HTTPException(status_code=404, detail="Embedding not found for this LLM")
+        vectordb_obj = rag_service.embedd_document(db, chatbot.id, embedd_obj, document_list)
 
-    document_list = db.query(Document).filter(Document.chatbot_id == chatbot_id).all()
-    if not document_list:
-        raise HTTPException(status_code=404, detail="No documents found for this chatbot")
+        existing_count = db.query(VectorDB).filter(VectorDB.chatbot_id == chatbot.id).count()
+        vector_db_name = f"{chatbot.name}_vdb_{existing_count + 1}"
 
-    vectordb_obj = rag_service.embedd_document(db, chatbot_id, embedd_obj, document_list)
+        vector_db = VectorDB(
+            chatbot_id=chatbot.id,
+            name=vector_db_name,
+            db_path=vectordb_obj.persist_path,
+            is_active=True
+        )
+        db.add(vector_db)
 
-    existing_count = db.query(VectorDB).filter(VectorDB.chatbot_id == chatbot.id).count()
-    vector_db_name = f"{chatbot.name}_vdb_{existing_count + 1}"
+        for doc in document_list:
+            doc.status = DocumentStatus.embedded
 
-    vector_db = VectorDB(
-        chatbot_id=chatbot.id,
-        name=vector_db_name,
-        db_path=vectordb_obj.persist_path,
-        is_active=True
-    )
-    db.add(vector_db)
-    db.commit()
-    db.refresh(vector_db)
+        db.commit()
+        db.refresh(vector_db)
 
-    for doc in document_list:
-        doc.status = "embedded"
-    db.commit()
+        return vector_db
 
-    return vector_db
+    except Exception as e:
+        db.rollback()
+        if 'document_list' in locals():
+            for doc in document_list:
+                doc.status = DocumentStatus.processing_failed
+            db.commit()
+        raise e
 
 
 

@@ -6,69 +6,137 @@
 </head>
 <body class="container mt-4">
 
-<h3 id="dashboardTitle">Vendor Dashboard</h3>
-<button class="btn btn-danger btn-sm float-end" onclick="logout()">Logout</button>
-
-<!-- Navigation tabs -->
-<ul class="nav nav-tabs mb-3">
-  <li class="nav-item"><a class="nav-link active" href="#" onclick="showSection('chatbots')">Chatbots</a></li>
-  <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('documents')">Documents</a></li>
-  <li class="nav-item"><a class="nav-link" href="#" onclick="showSection('chat')">Chat</a></li>
-</ul>
-
-<!-- Sections -->
-<div id="chatbotsSection">
-  <h5>Chatbots</h5>
-  <ul class="list-group" id="chatbotList"></ul>
-  <button class="btn btn-primary mt-2" onclick="showAddChatbotModal()">Add Chatbot</button>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3>Vendor Dashboard</h3>
+  <div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+      Profile
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li><a class="dropdown-item" href="#" onclick="showProfileForm()">Update Profile</a></li>
+      <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+    </ul>
+  </div>
 </div>
 
-<div id="documentsSection" class="d-none">
-  <h5>Documents (All)</h5>
-  <ul class="list-group mb-2" id="documentList"></ul>
+<div class="row">
+  <!-- Sidebar -->
+  <div class="col-md-2">
+    <ul class="list-group">
+      <li class="list-group-item list-group-item-action" onclick="loadChatbots()">Chatbots</li>
+      <li class="list-group-item list-group-item-action" onclick="loadDocuments()">Documents</li>
+      <li class="list-group-item list-group-item-action" onclick="showAnalyticsSection()">Analytics</li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="col-md-10">
+    <!-- Chatbots Section -->
+    <div id="chatbotsSection" class="d-none">
+      <div class="d-flex">
+        <ul id="chatbotList" class="list-group w-75 me-3"></ul>
+        <div class="d-flex align-items-start">
+          <button class="btn btn-primary" onclick="showAddChatbotModal()">Add Chatbot</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div id="documentsSection" class="d-none">
+      <ul id="documentList" class="list-group"></ul>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profileSection" class="d-none">
+      <h4>Update Profile</h4>
+      <div class="mb-2">
+        <label>Name</label>
+        <input type="text" id="vendorName" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label>Email</label>
+        <input type="email" id="vendorEmail" class="form-control">
+      </div>
+      <button class="btn btn-success" onclick="saveProfile()">Save</button>
+    </div>
+
+    <!-- Analytics Section -->
+    <div id="analyticsSection" class="d-none">
+      <h4>Vendor Analytics</h4>
+      <div class="mb-3">
+        <label for="analyticsUserSelect">Select User (optional)</label>
+        <select id="analyticsUserSelect" class="form-select">
+          <option value="">All Users</option>
+        </select>
+      </div>
+      <div id="analyticsList"></div>
+    </div>
+  </div>
 </div>
 
-<div id="chatSection" class="d-none">
-  <h5>Live Chat</h5>
-  <div id="chatWindow" style="height:300px; overflow:auto; border:1px solid #ccc; padding:10px;"></div>
-  <select id="chatbotSelect" class="form-select mb-2"></select>
-  <input id="chatInput" class="form-control mb-2" placeholder="Type your message">
-  <button class="btn btn-success" onclick="sendChat()">Send</button>
-</div>
-
-<!-- Chatbot Modal (with Document Upload) -->
+<!-- Chatbot Modal -->
 <div class="modal fade" id="chatbotModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content p-3">
-      <h5>Add / Edit Chatbot</h5>
-      <input type="hidden" id="chatbotId">
-
-      <!-- Chatbot Fields -->
-      <input id="chatbotName" class="form-control mb-2" placeholder="Chatbot Name">
-      <textarea id="chatbotDescription" class="form-control mb-2" placeholder="Description"></textarea>
-      <textarea id="systemPrompt" class="form-control mb-2" placeholder="System Prompt"></textarea>
-      <select id="llmSelect" class="form-select mb-2"></select>
-      <input id="llmPath" class="form-control mb-2" placeholder="LLM Path" readonly>
-      <select id="mode" class="form-select mb-2">
-        <option value="private">Private</option>
-        <option value="public">Public</option>
-      </select>
-      <div class="form-check mb-2">
-        <input id="isActive" type="checkbox" class="form-check-input" checked>
-        <label class="form-check-label">Active</label>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Chatbot</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
-      <hr>
-      <h6>Attach Documents</h6>
-      <input type="file" id="docFile" class="form-control mb-2" multiple>
-      <!-- Container to show all selected files -->
-      <div id="selectedFiles" style="max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:5px;"></div>
-
-
-      <!-- Existing documents loaded from server -->
-      <div id="existingDocs" class="mb-2"></div>
-
-      <button class="btn btn-primary float-end" onclick="saveChatbotWithDocument()">Save Chatbot</button>
+      <div class="modal-body">
+        <input type="hidden" id="chatbotId">
+        <div class="mb-2">
+          <label>Name</label>
+          <input type="text" id="chatbotName" class="form-control">
+        </div>
+        <div class="mb-2">
+          <label>Description</label>
+          <textarea id="chatbotDescription" class="form-control"></textarea>
+        </div>
+        <div class="mb-2">
+          <label>System Prompt</label>
+          <textarea id="systemPrompt" class="form-control"></textarea>
+        </div>
+        <div class="mb-2">
+          <label>LLM</label>
+          <select id="llmSelect" class="form-select"></select>
+          <input type="hidden" id="llmPath">
+        </div>
+        <div class="mb-2">
+          <label>Mode</label>
+          <select id="mode" class="form-select">
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
+        </div>
+        <div class="form-check mb-2">
+          <input type="checkbox" id="isActive" class="form-check-input" checked>
+          <label class="form-check-label">Active</label>
+        </div>
+        <div class="mb-2">
+          <label>Vector Store Type</label>
+          <select id="vectorStoreType" class="form-select">
+            <option value="chroma">Chroma</option>
+            <option value="pinecone">Pinecone</option>
+            <option value="qdrant">Qdrant</option>
+            <option value="weaviate">Weaviate</option>
+            <option value="pgvector">PGVector</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Vector Store Config</label>
+          <textarea id="vectorStoreConfig" class="form-control"></textarea>
+        </div>
+        <div class="mb-2">
+          <label>Upload Documents</label>
+          <input type="file" id="docFile" multiple class="form-control">
+          <div id="selectedFiles" class="mt-2"></div>
+          <div id="existingDocs" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="saveChatbotBtn">Save</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>
