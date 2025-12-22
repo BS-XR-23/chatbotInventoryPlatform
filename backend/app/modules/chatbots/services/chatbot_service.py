@@ -135,12 +135,12 @@ def get_latest_vector_db(chatbot: Chatbot) -> Optional[VectorDB]:
         key=lambda v: (v.updated_at or v.created_at)
     )
 
-def get_chatbots_for_user(db: Session, user_id: int):
+# def get_chatbots_for_user(db: Session, user_id: int):
 
-    chatbot_ids = db.query(Conversation.chatbot_id).filter(Conversation.user_id == user_id).distinct().all()
-    chatbot_ids = [c[0] for c in chatbot_ids]  # extract IDs
+#     chatbot_ids = db.query(Conversation.chatbot_id).filter(Conversation.user_id == user_id).distinct().all()
+#     chatbot_ids = [c[0] for c in chatbot_ids]  # extract IDs
 
-    return db.query(Chatbot).filter(Chatbot.id.in_(chatbot_ids)).all()
+#     return db.query(Chatbot).filter(Chatbot.id.in_(chatbot_ids)).all()
 
 def handle_conversation_singleturn(
     db: Session,

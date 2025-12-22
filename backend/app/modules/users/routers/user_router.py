@@ -8,6 +8,8 @@ from modules.users.services import user_service
 from modules.users.models.user_model import User
 from modules.auth.users import auth_user
 from modules.vendors.models.vendor_model import Vendor
+from modules.chatbots.services import chatbot_service
+from modules.chatbots.schemas.chatbot_schema import ChatbotRead
 
 router = APIRouter(tags=["Users"])
 
@@ -17,6 +19,15 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if not new_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     return new_user
+
+@router.get("/vendor_chatbots", response_model=List[ChatbotRead])
+def get_vendor_chatbots(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(auth_user.get_current_user)
+):
+    vendor_id = current_user.vendor_id
+    return user_service.get_vendor_chatbots(db, vendor_id)
+
 
 @router.get("/{user_id}", response_model=UserRead)
 def get_user(

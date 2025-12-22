@@ -4,7 +4,7 @@ from typing import List
 from modules.api_keys.models.api_model import APIKey
 from modules.api_keys.schemas.api_schema import APIKeyCreate, APIKeyUpdate
 
-def create_api_key(db: Session, api_key_data: APIKeyCreate) -> APIKey:
+def create_api_key(db: Session, api_key_data: APIKeyCreate, vendor_id: int) -> APIKey:
     new_key = APIKey(**api_key_data.dict())
     db.add(new_key)
     db.commit()

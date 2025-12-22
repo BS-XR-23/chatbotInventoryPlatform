@@ -7,9 +7,11 @@ from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotRead, 
 from modules.chatbots.services import chatbot_service
 from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
+from modules.admins.models.admin_model import Admin
 from modules.users.models.user_model import User
 from core.enums import ChatbotMode, VectorStoreType
 from modules.auth.vendors.auth_vendor import get_current_vendor
+from modules.auth.admins.auth_admin import get_current_admin
 from modules.auth.users.auth_user import get_current_user
 
 
@@ -27,7 +29,7 @@ def create_chatbot_endpoint(
     vector_store_config: Optional[str] = Form(None), 
     files: List[UploadFile] = File([]),  
     db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(get_current_vendor)
+    current_admin: Admin = Depends(get_current_admin)
 ):
 
     config_dict = None
@@ -69,10 +71,6 @@ def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Chatbot not found")
     return chatbot
 
-@router.get("/user", response_model=List[ChatbotRead])  
-def get_chatbots_for_current_user(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    return chatbot_service.get_chatbots_for_user(db, current_user.id)
-
 @router.put("/{chatbot_id}", response_model=ChatbotRead)
 async def update_chatbot_endpoint(
     chatbot_id: int,
@@ -86,7 +84,7 @@ async def update_chatbot_endpoint(
     vector_store_config: Optional[str] = Form(None), 
     files: List[UploadFile] = File([]),  # optional files
     db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(get_current_vendor)
+    current_admin: Admin = Depends(get_current_admin)
 ):
     import json
     config_dict = None
@@ -121,7 +119,7 @@ async def update_chatbot_endpoint(
     return chatbot
 
 @router.delete("/{chatbot_id}")
-def delete_chatbot(chatbot_id: int, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
+def delete_chatbot(chatbot_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(get_current_admin)):
     success = chatbot_service.delete_chatbot(db, chatbot_id)
     if not success:
         raise HTTPException(status_code=404, detail="Chatbot not found")

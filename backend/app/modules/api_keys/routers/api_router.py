@@ -15,7 +15,7 @@ router = APIRouter(tags=["API Keys"])
 # Create API Key
 @router.post("/", response_model=api_schema.APIKeyRead)
 def create_api_key(api_key: api_schema.APIKeyCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return api_service.create_api_key(db, api_key)
+    return api_service.create_api_key(db, api_key, vendor_id=current_user.vendor_id)
 
 # Get all API Keys
 @router.get("/", response_model=List[api_schema.APIKeyRead])

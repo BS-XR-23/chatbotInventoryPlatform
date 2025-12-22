@@ -102,8 +102,9 @@ function renderConversations(data) {
         const messages = data[sessionId];
         messages.forEach(msg => {
             const msgDiv = document.createElement("div");
-            msgDiv.classList.add("message", msg.sender_type, "mb-1");
-            msgDiv.textContent = `[${new Date(msg.timestamp).toLocaleString()}] ${msg.sender_type.toUpperCase()}: ${msg.content}`;
+            msgDiv.classList.add("message", msg.sender_type === "user" ? "user" : "chatbot", "mb-1");
+            msgDiv.textContent = msg.content;
+            msgDiv.setAttribute("data-time", new Date(msg.timestamp).toLocaleTimeString());
             sessionDiv.appendChild(msgDiv);
         });
 
@@ -119,31 +120,106 @@ const chatMessages = document.getElementById("chatMessages");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
 
-// Track current session for the chat
+// Track selected chatbot and session
 let chatSessionId = null;
-const chatbotId = 10; // You can make this dynamic if you have multiple chatbots
+let selectedChatbotId = null;
+let currentChatbotMode = null;
+let userApiKey = null; // API key for private chatbots
+let selectedChatbotName = "Chatbot"; // store chatbot name for header
 
-// Toggle chat window
+// ------------------ Load Chatbots ------------------
+async function loadChatbots() {
+    try {
+        const res = await fetch(`${API_BASE}/users/vendor_chatbots`, {
+            method: "GET",
+            headers: { 
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!res.ok) throw new Error("Failed to load chatbots");
+
+        const chatbots = await res.json();
+
+        if (!Array.isArray(chatbots)) {
+            console.error("Invalid chatbots response: ", chatbots);
+            throw new Error("Invalid chatbots response");
+        }
+
+        const listContainer = document.getElementById("chatbotList");
+        listContainer.innerHTML = "";
+
+        chatbots.forEach(cb => {
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.innerHTML = `
+                <span>${cb.name} <small>(${cb.mode})</small></span>
+                <button class="btn btn-sm btn-primary">Select</button>
+            `;
+            li.querySelector("button").addEventListener("click", () => {
+                selectedChatbotId = cb.id;
+                selectedChatbotName = cb.name;
+                currentChatbotMode = cb.mode;
+                chatSessionId = null;
+                userApiKey = null;
+
+                if (cb.mode === "private") {
+                    alert("This is a private chatbot. Generate API key from profile to chat.");
+                } else {
+                    alert(`Selected chatbot: ${cb.name}`);
+                }
+
+                updateChatHeader();
+            });
+            listContainer.appendChild(li);
+        });
+    } catch (err) {
+        console.error(err);
+        alert("Failed to load chatbots");
+    }
+}
+
+// ------------------ Chat Header Update ------------------
+function updateChatHeader() {
+    chatHeader.innerHTML = `
+        ${selectedChatbotName}
+        <button class="closeChat" onclick="chatWindow.style.display='none'">✖</button>
+    `;
+}
+
+// ------------------ Chat Bubble Toggle ------------------
 chatBubble.addEventListener("click", () => {
+    if (!selectedChatbotId) {
+        alert("Select a chatbot first.");
+        return;
+    }
     chatWindow.style.display = chatWindow.style.display === "flex" ? "none" : "flex";
     chatWindow.style.flexDirection = "column";
     chatInput.focus();
+
+    updateChatHeader();
 });
 
-// Close chat window on header click
-chatHeader.addEventListener("click", () => {
-    chatWindow.style.display = "none";
-});
-
-// Send message to chatbot
+// ------------------ Send Message ------------------
 async function sendMessage() {
+    if (!selectedChatbotId) {
+        alert("Select a chatbot first.");
+        return;
+    }
+    if (currentChatbotMode === "private" && !userApiKey) {
+        alert("You need an API key to chat with this private chatbot.");
+        return;
+    }
+
     const question = chatInput.value.trim();
     if (!question) return;
 
     // Add user message to chat
     const userMsgDiv = document.createElement("div");
-    userMsgDiv.classList.add("message", "user", "mb-1");
-    userMsgDiv.textContent = `[${new Date().toLocaleTimeString()}] YOU: ${question}`;
+    userMsgDiv.classList.add("message", "user");
+    userMsgDiv.textContent = question;
+    userMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
     chatMessages.appendChild(userMsgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -152,24 +228,30 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE}/chatbots/${chatbotId}/chat`, {
+        const headers = {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        };
+        if (currentChatbotMode === "private") {
+            headers["x-api-key"] = userApiKey;
+        }
+
+        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/chat`, {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
+            headers,
             body: JSON.stringify({ question, session_id: chatSessionId })
         });
 
         if (!res.ok) throw new Error("Failed to chat with bot");
 
         const data = await res.json();
-        chatSessionId = data.session_id; // Save session_id for multi-turn
+        chatSessionId = data.session_id;
 
         // Add bot response
         const botMsgDiv = document.createElement("div");
-        botMsgDiv.classList.add("message", "chatbot", "mb-1");
-        botMsgDiv.textContent = `[${new Date().toLocaleTimeString()}] BOT: ${data.answer}`;
+        botMsgDiv.classList.add("message", "chatbot");
+        botMsgDiv.textContent = data.answer;
+        botMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
         chatMessages.appendChild(botMsgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -183,15 +265,47 @@ async function sendMessage() {
     }
 }
 
-// Send message on button click
+// Send message events
 sendBtn.addEventListener("click", sendMessage);
-
-// Send message on Enter key
 chatInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-        sendMessage();
-    }
+    if (e.key === "Enter") sendMessage();
 });
+
+// ------------------ Generate API Key ------------------
+async function generateApiKey() {
+    if (!selectedChatbotId) {
+        alert("Select a chatbot first.");
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api-keys/`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                user_id: currentUser.id,
+                chatbot_id: selectedChatbotId,
+                key: crypto.randomUUID(),
+                status: "active"
+            })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            console.error("API key creation error:", errData);
+            throw new Error("Failed to generate API key");
+        }
+
+        const data = await res.json();
+        userApiKey = data.key;
+        alert(`API key generated: ${userApiKey}`);
+    } catch (err) {
+        console.error(err);
+        alert("Failed to generate API key");
+    }
+}
 
 // ------------------ DOMContentLoaded ------------------
 document.addEventListener("DOMContentLoaded", () => {
@@ -200,11 +314,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("logoutBtn").addEventListener("click", logout);
     document.getElementById("deleteAccountBtn").addEventListener("click", deleteAccount);
 
+    // Bind "Generate API Key" button from HTML
+    document.getElementById("generateApiKeyBtn").addEventListener("click", generateApiKey);
+
     // Render user info
     renderUserInfo(currentUser);
 
     // Bind "All Conversations" button
-    document.getElementById("allConversationsBtn").addEventListener("click", () => {
-        fetchConversations();
-    });
+    document.getElementById("allConversationsBtn").addEventListener("click", fetchConversations);
+
+    // Load vendor-specific chatbots
+    loadChatbots();
 });
