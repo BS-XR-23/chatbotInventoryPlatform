@@ -7,8 +7,11 @@ from modules.admins.schemas.admin_schema import AdminCreate, AdminRead, AdminUpd
 from modules.auth.admins import auth_admin
 from modules.admins.services import admin_service
 from modules.vendors.schemas.vendor_schema import VendorRead, VendorStatusUpdate
+from modules.vendors.services import vendor_service
 from modules.documents.schemas.document_schema import DocumentRead
 from modules.documents.services import document_service
+from modules.chatbots.schemas.chatbot_schema import ChatbotRead
+from modules.chatbots.services import chatbot_service
 
 
 router = APIRouter(tags=["Admins"])
@@ -108,3 +111,10 @@ def most_used_chatbot(db: Session = Depends(get_db), current_admin: Admin = Depe
 def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
     return admin_service.get_total_tokens_by_vendor(db, vendor_id)
 
+@router.get("/all-vendors", response_model=List[VendorRead])
+def list_vendors(db: Session = Depends(get_db)):
+    return vendor_service.list_vendors(db)
+
+@router.get("/", response_model=List[ChatbotRead])
+def get_chatbots(db: Session = Depends(get_db)):
+    return chatbot_service.get_chatbots(db)

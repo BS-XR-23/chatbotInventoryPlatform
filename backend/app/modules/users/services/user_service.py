@@ -3,6 +3,7 @@ from typing import List
 from modules.users.models.user_model import User
 from modules.users.schemas.user_schema import UserCreate, UserUpdate
 from modules.auth.users import auth_user
+from modules.chatbots.models.chatbot_model import Chatbot
 
 
 def create_user(db: Session, user_data: UserCreate) -> User:
@@ -46,3 +47,6 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+def get_vendor_chatbots(db: Session, vendor_id: int) -> List[Chatbot]:
+    return db.query(Chatbot).filter(Chatbot.vendor_id == vendor_id).all()
