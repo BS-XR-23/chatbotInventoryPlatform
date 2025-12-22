@@ -20,6 +20,7 @@ router = APIRouter(tags=["Chatbots"])
 @router.post("/create", response_model=ChatbotRead)
 def create_chatbot_endpoint(
     name: str = Form(...),
+    vendor_id: int = Form(...),
     description: Optional[str] = Form(None),
     system_prompt: Optional[str] = Form(None),
     llm_id: int = Form(...),
@@ -42,7 +43,7 @@ def create_chatbot_endpoint(
 
     chatbot = chatbot_service.create_chatbot_with_documents(
         db=db,
-        vendor_id=current_vendor.id,
+        vendor_id=vendor_id,
         name=name,
         description=description or "",
         system_prompt=system_prompt or "",
@@ -74,6 +75,7 @@ def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
 @router.put("/{chatbot_id}", response_model=ChatbotRead)
 async def update_chatbot_endpoint(
     chatbot_id: int,
+    vendor_id: int = Form(...),
     name: str = Form(...),
     description: Optional[str] = Form(None),
     system_prompt: Optional[str] = Form(None),
@@ -96,6 +98,7 @@ async def update_chatbot_endpoint(
 
     chatbot_data = ChatbotUpdate(
         name=name,
+        vendor_id=vendor_id,
         description=description or "",
         system_prompt=system_prompt or "",
         llm_id=llm_id,

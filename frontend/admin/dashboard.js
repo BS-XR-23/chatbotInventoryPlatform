@@ -60,6 +60,7 @@ async function duplicateChatbot(id) {
   loadChatbots();
 }
 
+
 /* ===================== VENDORS ===================== */
 async function loadVendors() {
   const res = await fetch(`${API_BASE}/admins/all-vendors`, { headers });
@@ -390,5 +391,15 @@ function logout() {
   window.location.href = "/login.html";
 }
 
-/* ===================== INIT ===================== */
-showSection("chatbots");
+function showAnalytics() {
+  // Hide all sections
+  document.querySelectorAll(".section").forEach(s => s.classList.add("d-none"));
+  
+  // Show the analytics section
+  document.getElementById("dashboard").classList.remove("d-none");
+
+  // Reload analytics data
+  loadChatbots(); // Most used chatbot
+  loadVendors();  // Vendor analytics
+}
+showAnalytics();
