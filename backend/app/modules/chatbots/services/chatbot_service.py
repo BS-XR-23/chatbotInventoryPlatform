@@ -88,6 +88,7 @@ def update_chatbot_with_documents(
 
     # Update chatbot fields
     chatbot.name = chatbot_data.name or chatbot.name
+    chatbot.vendor_id = chatbot_data.vendor_id or chatbot.vendor_id
     chatbot.description = chatbot_data.description or chatbot.description
     chatbot.system_prompt = chatbot_data.system_prompt or chatbot.system_prompt
     chatbot.llm_id = chatbot_data.llm_id or chatbot.llm_id

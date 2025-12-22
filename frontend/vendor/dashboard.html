@@ -3,18 +3,163 @@
 <head>
   <title>Vendor Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #e9ecef; /* greyish background */
+      overflow-x: hidden;
+    }
+
+    h3 {
+      cursor: pointer;
+    }
+
+    /* Top bar */
+    .top-bar {
+      background-color: #343a40; /* dark grey */
+      color: white;
+      padding: 12px 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      margin-bottom: 16px;
+    }
+
+    .top-bar h3 {
+      color: white;
+      margin: 0;
+    }
+
+    .top-bar .dropdown-toggle {
+      color: white;
+      border-color: white;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background-color: #495057; /* darker vertical list */
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .sidebar .list-group-item {
+      cursor: pointer;
+      border: none;
+      border-bottom: 1px solid #6c757d;
+      color: white !important;
+      background-color: #495057;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sidebar .list-group-item:hover {
+      background-color: #adb5bd; /* light grey hover */
+      color: black !important;
+    }
+
+    /* Analytics section */
+    #analyticsSection h4 {
+      color: #343a40; /* dark header */
+    }
+
+    #userAnalyticsCard {
+      border: 1px solid #ffffff; /* white border */
+      background-color: #ffffff; /* card white */
+      margin-bottom: 16px;
+    }
+
+    #userAnalyticsCard select {
+      border-color: #6c757d;
+    }
+
+    /* Analytics cards */
+    .analytics-card {
+      border-radius: 8px;
+      padding: 16px;
+      color: black; /* text black for white cards */
+      background-color: #ffffff; /* white cards */
+      border: 1px solid #ffffff; /* white border */
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      transition: transform 0.2s;
+    }
+
+    .analytics-card:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Tables & lists */
+    table {
+      background-color: #ffffff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    table th {
+      background-color: #adb5bd; /* grey header for contrast */
+      color: black;
+    }
+
+    #documentList li {
+      background-color: #ffffff;
+      border: none;
+      border-bottom: 1px solid #dee2e6;
+      transition: background-color 0.2s;
+    }
+
+    #documentList li:hover {
+      background-color: #adb5bd;
+      color: black;
+    }
+
+    #selectedFilesPreview li {
+      background-color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      border: 1px solid #dee2e6;
+    }
+
+    pre {
+      background-color: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: black;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+    }
+    .btn-primary:hover { background-color: #0b5ed7; border-color: #0a58ca; }
+
+    .btn-success {
+      background-color: #198754;
+      border-color: #198754;
+    }
+    .btn-success:hover { background-color: #157347; border-color: #146c43; }
+
+    .btn-danger {
+      background-color: #dc3545; /* red for logout and delete */
+      border-color: #dc3545;
+    }
+    .btn-danger:hover { background-color: #bb2d3b; border-color: #b02a37; }
+  </style>
 </head>
+
 <body class="container mt-4">
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3>Vendor Dashboard</h3>
+<!-- Top Bar -->
+<div class="d-flex justify-content-between align-items-center top-bar">
+  <h3 onclick="showMainDashboard()">Vendor Dashboard</h3>
+
   <div class="dropdown">
-    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+    <button class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">
       Profile
     </button>
     <ul class="dropdown-menu dropdown-menu-end">
       <li><a class="dropdown-item" href="#" onclick="showProfileForm()">Update Profile</a></li>
-      <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+      <li><a class="dropdown-item btn-danger text-white" href="#" onclick="logout()">Logout</a></li>
     </ul>
   </div>
 </div>
@@ -22,122 +167,88 @@
 <div class="row">
   <!-- Sidebar -->
   <div class="col-md-2">
-    <ul class="list-group">
-      <li class="list-group-item list-group-item-action" onclick="loadChatbots()">Chatbots</li>
-      <li class="list-group-item list-group-item-action" onclick="loadDocuments()">Documents</li>
-      <li class="list-group-item list-group-item-action" onclick="showAnalyticsSection()">Analytics</li>
+    <ul class="list-group sidebar">
+      <li class="list-group-item" onclick="loadChatbots()">Chatbots</li>
+      <li class="list-group-item" onclick="loadDocuments()">Documents</li>
     </ul>
   </div>
 
   <!-- Main Content -->
   <div class="col-md-10">
-    <!-- Chatbots Section -->
-    <div id="chatbotsSection" class="d-none">
-      <div class="d-flex">
-        <ul id="chatbotList" class="list-group w-75 me-3"></ul>
-        <div class="d-flex align-items-start">
-          <button class="btn btn-primary" onclick="showAddChatbotModal()">Add Chatbot</button>
+
+    <!-- Analytics -->
+    <div id="analyticsSection">
+      <h4 class="mb-3">Vendor Analytics</h4>
+
+      <!-- User Selection Card -->
+      <div id="userAnalyticsCard" class="card mb-3 p-3">
+        <label class="form-label">Select User (optional)</label>
+        <select id="analyticsUserSelect" class="form-select mb-2">
+          <option value="">All Users</option>
+        </select>
+        <div id="userAnalyticsContent" class="mt-2">
+          <p>Select a user to see their data</p>
         </div>
+      </div>
+
+      <!-- Container for other analytics cards -->
+      <div id="analyticsList" class="d-grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
       </div>
     </div>
 
-    <!-- Documents Section -->
+    <!-- Chatbots -->
+    <div id="chatbotsSection" class="d-none">
+      <h4 class="mb-3">Chatbots</h4>
+
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>LLM</th>
+            <th>Vector Store</th>
+            <th>Mode</th>
+          </tr>
+        </thead>
+        <tbody id="chatbotList"></tbody>
+      </table>
+    </div>
+
+    <!-- Documents -->
     <div id="documentsSection" class="d-none">
+      <h4 class="mb-3">Documents</h4>
+
+      <div class="card mb-3 p-3">
+        <label class="form-label">Select Chatbot</label>
+        <select id="documentChatbotSelect" class="form-select mb-2"></select>
+
+        <label class="form-label">Upload Documents</label>
+        <input type="file" class="form-control" multiple onchange="handleDocumentFileSelect(event)">
+
+        <ul id="selectedFilesPreview" class="mt-2 small text-muted"></ul>
+
+        <button class="btn btn-danger mt-2" onclick="uploadDocuments()">Upload</button>
+      </div>
+
       <ul id="documentList" class="list-group"></ul>
     </div>
 
-    <!-- Profile Section -->
+    <!-- Profile -->
     <div id="profileSection" class="d-none">
-      <h4>Update Profile</h4>
+      <h4 class="mb-3">Update Profile</h4>
+
       <div class="mb-2">
         <label>Name</label>
-        <input type="text" id="vendorName" class="form-control">
+        <input id="vendorName" class="form-control">
       </div>
+
       <div class="mb-2">
         <label>Email</label>
-        <input type="email" id="vendorEmail" class="form-control">
+        <input id="vendorEmail" class="form-control">
       </div>
-      <button class="btn btn-success" onclick="saveProfile()">Save</button>
+
+      <button class="btn btn-danger" onclick="saveProfile()">Save</button>
     </div>
 
-    <!-- Analytics Section -->
-    <div id="analyticsSection" class="d-none">
-      <h4>Vendor Analytics</h4>
-      <div class="mb-3">
-        <label for="analyticsUserSelect">Select User (optional)</label>
-        <select id="analyticsUserSelect" class="form-select">
-          <option value="">All Users</option>
-        </select>
-      </div>
-      <div id="analyticsList"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Chatbot Modal -->
-<div class="modal fade" id="chatbotModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Chatbot</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="chatbotId">
-        <div class="mb-2">
-          <label>Name</label>
-          <input type="text" id="chatbotName" class="form-control">
-        </div>
-        <div class="mb-2">
-          <label>Description</label>
-          <textarea id="chatbotDescription" class="form-control"></textarea>
-        </div>
-        <div class="mb-2">
-          <label>System Prompt</label>
-          <textarea id="systemPrompt" class="form-control"></textarea>
-        </div>
-        <div class="mb-2">
-          <label>LLM</label>
-          <select id="llmSelect" class="form-select"></select>
-          <input type="hidden" id="llmPath">
-        </div>
-        <div class="mb-2">
-          <label>Mode</label>
-          <select id="mode" class="form-select">
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-          </select>
-        </div>
-        <div class="form-check mb-2">
-          <input type="checkbox" id="isActive" class="form-check-input" checked>
-          <label class="form-check-label">Active</label>
-        </div>
-        <div class="mb-2">
-          <label>Vector Store Type</label>
-          <select id="vectorStoreType" class="form-select">
-            <option value="chroma">Chroma</option>
-            <option value="pinecone">Pinecone</option>
-            <option value="qdrant">Qdrant</option>
-            <option value="weaviate">Weaviate</option>
-            <option value="pgvector">PGVector</option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label>Vector Store Config</label>
-          <textarea id="vectorStoreConfig" class="form-control"></textarea>
-        </div>
-        <div class="mb-2">
-          <label>Upload Documents</label>
-          <input type="file" id="docFile" multiple class="form-control">
-          <div id="selectedFiles" class="mt-2"></div>
-          <div id="existingDocs" class="mt-2"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="saveChatbotBtn">Save</button>
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
   </div>
 </div>
 

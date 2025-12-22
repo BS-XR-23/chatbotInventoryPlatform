@@ -19,6 +19,7 @@ class ChatbotCreate(ChatbotBase):
 
 class ChatbotUpdate(BaseModel):
     name: Optional[str] = None
+    vendor_id : Optional[int] = None
     description: Optional[str] = None
     system_prompt: Optional[str] = None
     llm_id: Optional[int] = None
