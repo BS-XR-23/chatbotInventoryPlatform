@@ -12,6 +12,9 @@ const headers = {
 
 /* ===================== GLOBAL ===================== */
 let globalEmbeddings = [];
+let globalLLMs = [];
+let globalVendors = [];
+let selectedChatbotFiles = [];
 
 /* ===================== NAV ===================== */
 function showSection(id) {
@@ -25,21 +28,67 @@ function showSection(id) {
   if (id === "llms") loadLLMs();
 }
 
+/* ===================== DELETE CHATBOT ===================== */
+async function deleteChatbot(chatbotId) {
+  if (!confirm("Are you sure you want to delete this chatbot?")) return;
+
+  await fetch(`${API_BASE}/chatbots/${chatbotId}`, {
+    method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  loadChatbots(); // refresh list after deletion
+}
+
 /* ===================== CHATBOTS ===================== */
 async function loadChatbots() {
   const res = await fetch(`${API_BASE}/admins/`, { headers });
   const bots = await res.json();
 
-  chatbotList.innerHTML = "";
+  const llmRes = await fetch(`${API_BASE}/llms/`, { headers });
+  const llms = await llmRes.json();
+  globalLLMs = llms;
+  const llmMap = {};
+  llms.forEach(l => { llmMap[l.id] = l; });
+
+  const container = document.getElementById("chatbotList");
+  container.innerHTML = `
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>LLM</th>
+          <th>Vector Store</th>
+          <th>Mode</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="chatbotTableBody"></tbody>
+    </table>
+  `;
+
+  const tbody = document.getElementById("chatbotTableBody");
+
   bots.forEach(bot => {
-    chatbotList.innerHTML += `
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        ${bot.name}
-        <button class="btn btn-sm btn-outline-primary"
-          onclick="duplicateChatbot(${bot.id})">
-          Duplicate
-        </button>
-      </li>`;
+    const llm = llmMap[bot.llm_id]; 
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${bot.name}</td>
+      <td>
+        ${llm?.name || "N/A"}<br>
+        <small class="text-muted">Provider: ${llm?.provider || "N/A"} | Token Limit: ${llm?.def_token_limit || "N/A"}</small>
+      </td>
+      <td>${bot.vector_store_type}</td>
+      <td>${bot.mode}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-primary me-2" onclick="duplicateChatbot(${bot.id})">Duplicate</button>
+        <button class="btn btn-sm btn-outline-warning me-2" onclick="openUpdateChatbotModal(${JSON.stringify(bot).replace(/'/g,"\\'")})">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="deleteChatbot(${bot.id})">Delete</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
   });
 
   const analyticsRes = await fetch(`${API_BASE}/admins/most-used-chatbot`, { headers });
@@ -55,8 +104,186 @@ async function loadChatbots() {
   }
 }
 
-async function duplicateChatbot(id) {
-  await fetch(`${API_BASE}/admins/chatbots/duplicate/${id}`, { method: "POST", headers });
+/* ===================== CHATBOT MODAL ===================== */
+function openAddChatbotModal() {
+  const modal = new bootstrap.Modal(document.getElementById("chatbotModal"));
+  document.getElementById("chatbotForm").reset();
+  selectedChatbotFiles = [];
+  renderSelectedChatbotFiles();
+  document.getElementById("chatbotModalTitle").innerText = "Add Chatbot";
+  document.getElementById("chatbotId").value = "";
+
+  // Populate LLM dropdown
+  const llmSelect = document.getElementById("chatbotLLMId");
+  llmSelect.innerHTML = "";
+  globalLLMs.forEach(l => {
+    const option = document.createElement("option");
+    option.value = l.id;
+    option.text = l.name;
+    option.dataset.path = l.path || "";
+    llmSelect.appendChild(option);
+  });
+
+  // Populate Vendor dropdown
+  const vendorSelect = document.getElementById("chatbotVendorId");
+  vendorSelect.innerHTML = "";
+  globalVendors.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.id;
+    option.text = v.name;
+    vendorSelect.appendChild(option);
+  });
+
+  updateLLMPath();
+  updateVectorConfig();
+  modal.show();
+}
+
+function openUpdateChatbotModal(bot) {
+  const modal = new bootstrap.Modal(document.getElementById("chatbotModal"));
+  document.getElementById("chatbotModalTitle").innerText = "Update Chatbot";
+
+  document.getElementById("chatbotId").value = bot.id;
+  document.getElementById("chatbotName").value = bot.name;
+
+  // LLM dropdown
+  const llmSelect = document.getElementById("chatbotLLMId");
+  llmSelect.innerHTML = "";
+  globalLLMs.forEach(l => {
+    const option = document.createElement("option");
+    option.value = l.id;
+    option.text = l.name;
+    option.dataset.path = l.path || "";
+    if (l.id === bot.llm_id) option.selected = true;
+    llmSelect.appendChild(option);
+  });
+  updateLLMPath();
+
+  // Vendor dropdown
+  const vendorSelect = document.getElementById("chatbotVendorId");
+  vendorSelect.innerHTML = "";
+  globalVendors.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.id;
+    option.text = v.name;
+    if (v.id === bot.vendor_id) option.selected = true;
+    vendorSelect.appendChild(option);
+  });
+
+  document.getElementById("chatbotLLMPath").value = bot.llm_path || "";
+  document.getElementById("chatbotVectorStore").value = bot.vector_store_type;
+  document.getElementById("chatbotVectorConfig").value = JSON.stringify(bot.vector_store_config || {}, null, 2);
+  document.getElementById("chatbotMode").value = bot.mode;
+
+  // Reset selected files
+  selectedChatbotFiles = [];
+  renderSelectedChatbotFiles();
+
+  modal.show();
+}
+
+function updateLLMPath() {
+  const llmSelect = document.getElementById("chatbotLLMId");
+  const pathInput = document.getElementById("chatbotLLMPath");
+  const selectedOption = llmSelect.options[llmSelect.selectedIndex];
+  pathInput.value = selectedOption.dataset.path || "";
+}
+
+function updateVectorConfig() {
+  const storeType = document.getElementById("chatbotVectorStore").value;
+  const configTextarea = document.getElementById("chatbotVectorConfig");
+
+  const defaultConfigs = {
+    chroma: { persist_dir: "uploads/vectorstore" },
+    qdrant: { url: "http://localhost:6333" },
+    pinecone: { index_name: "my-index" },
+    weaviate: { url: "http://localhost:8080" },
+    pgvector: { connection_string: "postgresql://user:pass@localhost/db" }
+  };
+
+  configTextarea.value = JSON.stringify(defaultConfigs[storeType] || {}, null, 2);
+}
+
+/* ===================== FILE HANDLING ===================== */
+function handleChatbotFileSelect(event) {
+  const newFiles = Array.from(event.target.files);
+
+  newFiles.forEach(file => {
+    const exists = selectedChatbotFiles.some(
+      f => f.name === file.name && f.size === file.size
+    );
+    if (!exists) selectedChatbotFiles.push(file);
+  });
+
+  event.target.value = ""; // reset input to allow re-selection
+  renderSelectedChatbotFiles();
+}
+
+// Render selected files with remove buttons
+function renderSelectedChatbotFiles() {
+  const preview = document.getElementById("chatbotFilesPreview");
+  preview.innerHTML = "";
+
+  selectedChatbotFiles.forEach((file, index) => {
+    const li = document.createElement("li");
+    li.classList.add("d-flex", "justify-content-between", "align-items-center", "mb-1");
+    li.innerHTML = `
+      ${file.name}
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeChatbotFile(${index})">
+        &times;
+      </button>
+    `;
+    preview.appendChild(li);
+  });
+}
+
+// Remove a selected file
+function removeChatbotFile(index) {
+  selectedChatbotFiles.splice(index, 1);
+  renderSelectedChatbotFiles();
+}
+
+/* ===================== FORM SUBMISSION ===================== */
+async function submitChatbotForm(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("chatbotId").value;
+  const name = document.getElementById("chatbotName").value;
+  const llm_id = document.getElementById("chatbotLLMId").value;
+  const llm_path = document.getElementById("chatbotLLMPath").value;
+  const vendor_id = document.getElementById("chatbotVendorId").value;
+  const vector_store_type = document.getElementById("chatbotVectorStore").value;
+  const vector_store_config = document.getElementById("chatbotVectorConfig").value;
+  const mode = document.getElementById("chatbotMode").value;
+
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("vendor_id", vendor_id);
+  formData.append("llm_id", llm_id);
+  formData.append("llm_path", llm_path);
+  formData.append("vector_store_type", vector_store_type);
+  formData.append("vector_store_config", vector_store_config);
+  formData.append("mode", mode);
+
+  // Append all selected files
+  selectedChatbotFiles.forEach(file => formData.append("files", file));
+
+  const url = id ? `${API_BASE}/chatbots/${id}` : `${API_BASE}/chatbots/create`;
+  const method = id ? "PUT" : "POST";
+
+  await fetch(url, {
+    method,
+    headers: {
+      "Authorization": `Bearer ${token}` // Do NOT set Content-Type; browser handles it
+    },
+    body: formData
+  });
+
+  // Clear selected files after submission
+  selectedChatbotFiles = [];
+  renderSelectedChatbotFiles();
+
+  bootstrap.Modal.getInstance(document.getElementById("chatbotModal")).hide();
   loadChatbots();
 }
 
@@ -65,6 +292,7 @@ async function duplicateChatbot(id) {
 async function loadVendors() {
   const res = await fetch(`${API_BASE}/admins/all-vendors`, { headers });
   const vendors = await res.json();
+  globalVendors = vendors; // <--- save globally for modal use
 
   vendorList.innerHTML = "";
   vendorSelect.innerHTML = "";
@@ -382,7 +610,62 @@ async function deleteLLM(id) {
 }
 
 /* ===================== PROFILE ===================== */
-function openProfile() { alert("Use GET /admins/me/{id} and PUT /admins/edit/{id}"); }
+async function openProfile() {
+  try {
+    // Call the backend endpoint that returns current admin info from the token
+    const res = await fetch(`${API_BASE}/admins/me`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!res.ok) throw new Error("Failed to fetch admin data");
+
+    const data = await res.json();
+
+    document.getElementById("profileId").value = data.id;
+    document.getElementById("profileName").value = data.name || "";
+    document.getElementById("profileEmail").value = data.email || "";
+
+    const modal = new bootstrap.Modal(document.getElementById("profileModal"));
+    modal.show();
+  } catch (err) {
+    console.error(err);
+    alert("Error loading profile data. Please log in again.");
+  }
+}
+
+async function submitProfileForm(event) {
+  event.preventDefault();
+
+  const id = document.getElementById("profileId").value;
+  const name = document.getElementById("profileName").value;
+  const email = document.getElementById("profileEmail").value;
+
+  try {
+    const res = await fetch(`${API_BASE}/admins/edit/${id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ name, email })
+    });
+
+    if (!res.ok) throw new Error("Failed to update profile");
+
+    const updatedAdmin = await res.json();
+
+    // Optionally, update localStorage
+    localStorage.setItem("admin", JSON.stringify(updatedAdmin));
+
+    bootstrap.Modal.getInstance(document.getElementById("profileModal")).hide();
+    alert("Profile updated successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("Error updating profile");
+  }
+}
+
 function openPassword() { alert("Use PUT /admins/change-password"); }
 
 /* ===================== LOGOUT ===================== */
