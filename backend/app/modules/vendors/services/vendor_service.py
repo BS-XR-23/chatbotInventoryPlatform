@@ -29,6 +29,9 @@ def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
 def list_vendors(db: Session) -> List[Vendor]:
     return db.query(Vendor).all()
 
+def count_of_vendors(db: Session) -> int:
+    return db.query(func.count(Vendor.id)).scalar()
+
 def get_vendor(db: Session, vendor_id: int) -> Vendor:
     return db.query(Vendor).filter(Vendor.id == vendor_id).first()
 
