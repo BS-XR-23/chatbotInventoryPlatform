@@ -23,6 +23,10 @@ def create_admin(admin: AdminCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email already registered")
     return new_admin
 
+@router.get("/me", response_model=AdminRead)
+def get_current_admin(current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return current_admin
+
 @router.get("/me/{admin_id}", response_model=AdminRead)
 def get_admin(
     admin_id: int,

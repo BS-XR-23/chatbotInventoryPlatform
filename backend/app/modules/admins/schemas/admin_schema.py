@@ -10,7 +10,7 @@ class AdminCreate(AdminBase):
 
 class AdminUpdate(AdminBase):
     email: Optional[EmailStr]
-    name: Optional[str]
+    name: Optional[str] 
 
 class AdminChangePassword(BaseModel):
     old_password: str
