@@ -138,20 +138,38 @@ async function uploadDocuments() {
   if (!selectedNewFiles.length) return alert("Select files first");
 
   const chatbotId = documentChatbotSelect.value;
+  if (!chatbotId) return alert("Select a chatbot first");
+
   const formData = new FormData();
-
   selectedNewFiles.forEach(f => formData.append("files", f));
-  formData.append("chatbot_id", chatbotId);
 
-  await fetch(`${API_BASE}/documents/upload`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData
-  });
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots/${chatbotId}/documents`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
 
-  alert("Upload successful");
-  loadDocuments();
+    if (!res.ok) {
+      const err = await res.text();
+      return alert("Upload failed: " + err);
+    }
+
+    alert("Upload successful");
+
+    // Refresh documents list
+    loadDocuments();
+
+    // Clear selected files and update preview
+    selectedNewFiles = [];
+    renderSelectedFiles();
+
+  } catch (error) {
+    alert("Upload failed: " + error.message);
+  }
 }
+
+
 
 // ------------------ Delete Document ------------------
 async function deleteDocument(id, btn) {
