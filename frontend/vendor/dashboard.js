@@ -179,56 +179,82 @@ async function loadAnalytics() {
   analyticsList.innerHTML = "";
   const userId = analyticsUserSelect.value;
 
-  // User analytics card is always visible
+  // ---------------- User Token Cards ----------------
   const userCard = document.getElementById("userAnalyticsCard");
   const userContent = document.getElementById("userAnalyticsContent");
 
   if (userId) {
-    try {
-      const res = await fetch(`${API_BASE}/vendors/user/${userId}/summary`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      userContent.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-    } catch {
-      userContent.innerHTML = `<p class="text-danger">Failed to load user data</p>`;
+    userContent.innerHTML = "";
+
+    const userEndpoints = [
+      ["Tokens Last 7 Days", `/vendors/user/${userId}/tokens-last7`, "tokens_last_7_days"],
+      ["Total Tokens", `/vendors/user/${userId}/tokens-total`, "total_tokens"]
+    ];
+
+    for (let [title, url, key] of userEndpoints) {
+      const card = document.createElement("div");
+      card.className = "analytics-card card p-3 shadow-sm mb-2";
+
+      try {
+        const res = await fetch(API_BASE + url, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+
+        // Extract the number from response
+        const value = (typeof data === "number") ? data : data[key] ?? 0;
+
+        card.innerHTML = `<h6>${title}</h6><p class="fs-4 mt-2">${value}</p>`;
+      } catch {
+        card.innerHTML = `<h6>${title}</h6><p class="text-danger">Failed to load data</p>`;
+      }
+
+      userContent.appendChild(card);
     }
   } else {
-    userContent.innerHTML = `<p>All user analytics shown below</p>`;
+    userContent.innerHTML = `<p>Select a user to see token stats</p>`;
   }
 
-  // Analytics cards endpoints
+  // ---------------- All-users Analytics Cards ----------------
   const endpoints = [
-    ["Top Chatbots by Messages", "/vendors/top-chatbots/messages"],
-    ["Top Chatbots by Users", "/vendors/top-chatbots/users"],
-    ["Daily Messages", "/vendors/daily/messages"],
-    ["Daily Unique Users", "/vendors/daily/unique-users"]
+    ["Top Chatbots by Messages", "/vendors/top-chatbots/messages", ["Chatbot", "Messages"], ["chatbot_name", "message_count"]],
+    ["Top Chatbots by Users", "/vendors/top-chatbots/users", ["Chatbot", "Unique Users"], ["chatbot_name", "unique_users"]],
+    ["Daily Messages", "/vendors/daily/messages", ["Day", "Chatbot", "Messages"], ["day", "chatbot_name", "messages"]],
+    ["Daily Unique Users", "/vendors/daily/unique-users", ["Day", "Chatbot", "Unique Users"], ["day", "chatbot_name", "unique_users"]]
   ];
 
-  if (userId) {
-    endpoints.push(
-      ["User Tokens (7 Days)", `/vendors/user/${userId}/tokens-last7`],
-      ["User Tokens (Total)", `/vendors/user/${userId}/tokens-total`]
-    );
-  }
-
   for (let i = 0; i < endpoints.length; i++) {
-    const [title, url] = endpoints[i];
+    const [title, url, headersArr, keysArr] = endpoints[i];
     const card = document.createElement("div");
     card.className = `analytics-card card p-3 shadow-sm`;
 
     try {
       const res = await fetch(API_BASE + url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      card.innerHTML = `<h6>${title}</h6><pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+      let html = `<h6>${title}</h6>`;
+
+      if (Array.isArray(data) && data.length) {
+        html += `<table class="table table-sm mt-2">
+                  <thead><tr>${headersArr.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+                  <tbody>
+                    ${data.map(row => `<tr>${keysArr.map(k => `<td>${row[k]}</td>`).join("")}</tr>`).join("")}
+                  </tbody>
+                 </table>`;
+      } else {
+        html += `<p class="text-muted mt-2">No data available</p>`;
+      }
+
+      card.innerHTML = html;
     } catch {
-      card.innerHTML = `<h6>${title}</h6><p class="text-danger">Failed</p>`;
+      card.innerHTML = `<h6>${title}</h6><p class="text-danger">Failed to load data</p>`;
     }
 
     analyticsList.appendChild(card);
   }
 }
 
-// ------------------ Event Listeners ------------------
+// ---------------- Event Listener ----------------
 analyticsUserSelect.addEventListener("change", loadAnalytics);
 document.addEventListener("DOMContentLoaded", showMainDashboard);
+
+
+

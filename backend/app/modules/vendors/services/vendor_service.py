@@ -74,7 +74,6 @@ def get_vendor_top_chatbots_by_messages(db: Session, vendor_id: int, limit: int 
 
     return [
         {
-            "chatbot_id": r.chatbot_id,
             "chatbot_name": r.chatbot_name,
             "message_count": r.message_count
         }
@@ -100,7 +99,6 @@ def get_vendor_top_chatbots_by_users(db: Session, vendor_id: int, limit: int = 3
 
     return [
         {
-            "chatbot_id": r.chatbot_id,
             "chatbot_name": r.chatbot_name,
             "unique_users": r.unique_users
         }
@@ -112,6 +110,7 @@ def get_vendor_daily_message_count(db: Session, vendor_id: int):
     rows = (
         db.query(
             Chatbot.id.label("chatbot_id"),
+            Chatbot.name.label("chatbot_name"),
             func.date(Conversation.timestamp).label("day"),
             func.count(Conversation.id).label("messages")
         )
@@ -124,7 +123,7 @@ def get_vendor_daily_message_count(db: Session, vendor_id: int):
 
     return [
         {
-            "chatbot_id": r.chatbot_id,
+            "chatbot_name": r.chatbot_name,
             "day": str(r.day),
             "messages": r.messages
         }
@@ -136,6 +135,7 @@ def get_vendor_daily_unique_users(db: Session, vendor_id: int):
     rows = (
         db.query(
             Chatbot.id.label("chatbot_id"),
+            Chatbot.name.label("chatbot_name"),
             func.date(Conversation.timestamp).label("day"),
             func.count(func.distinct(Conversation.user_id)).label("unique_users")
         )
@@ -148,7 +148,7 @@ def get_vendor_daily_unique_users(db: Session, vendor_id: int):
 
     return [
         {
-            "chatbot_id": r.chatbot_id,
+            "chatbot_name": r.chatbot_name,
             "day": str(r.day),
             "unique_users": r.unique_users
         }
