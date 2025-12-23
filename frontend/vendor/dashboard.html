@@ -6,27 +6,34 @@
 
   <style>
     body {
-      background-color: #e9ecef; /* greyish background */
+      background-color: #e9ecef;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
       overflow-x: hidden;
     }
 
-    h3 {
-      cursor: pointer;
-    }
-
-    /* Top bar */
+    /* ================= TOP BAR ================= */
     .top-bar {
-      background-color: #343a40; /* dark grey */
+      background-color: #343a40;
       color: white;
       padding: 12px 16px;
-      border-radius: 6px;
+      border-radius: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      margin-bottom: 16px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .top-bar h3 {
       color: white;
       margin: 0;
+      cursor: pointer;
     }
 
     .top-bar .dropdown-toggle {
@@ -34,49 +41,59 @@
       border-color: white;
     }
 
-    /* Sidebar */
+    /* ================= SIDEBAR ================= */
     .sidebar {
-      background-color: #495057; /* darker vertical list */
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      position: fixed;
+      top: 56px; /* height of top bar */
+      left: 0;
+      width: 220px;
+      height: calc(100% - 56px);
+      background-color: #212529;
+      color: white;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 0;
     }
 
-    .sidebar .list-group-item {
-      cursor: pointer;
+    .sidebar button {
+      width: 100%;
+      text-align: left;
       border: none;
-      border-bottom: 1px solid #6c757d;
-      color: white !important;
-      background-color: #495057;
-      transition: background-color 0.2s, color 0.2s;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      padding: 10px 12px;
+      background-color: #212529;
+      color: white;
+      transition: background 0.2s;
+      cursor: pointer;
     }
 
-    .sidebar .list-group-item:hover {
-      background-color: #adb5bd; /* light grey hover */
-      color: black !important;
+    .sidebar button:hover {
+      background-color: #343a40;
     }
 
-    /* Analytics section */
+    /* ================= MAIN CONTENT ================= */
+    .main-content {
+      margin-left: 220px; /* width of sidebar */
+      padding: 80px 20px 20px 20px; /* top padding for top bar */
+    }
+
+    /* ================= ANALYTICS ================= */
     #analyticsSection h4 {
-      color: #343a40; /* dark header */
+      color: #343a40;
     }
 
     #userAnalyticsCard {
-      border: 1px solid #ffffff; /* white border */
-      background-color: #ffffff; /* card white */
+      background-color: #ffffff;
+      border: 1px solid #ffffff;
       margin-bottom: 16px;
     }
 
-    #userAnalyticsCard select {
-      border-color: #6c757d;
-    }
-
-    /* Analytics cards */
     .analytics-card {
+      background-color: #ffffff;
       border-radius: 8px;
       padding: 16px;
-      color: black; /* text black for white cards */
-      background-color: #ffffff; /* white cards */
-      border: 1px solid #ffffff; /* white border */
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
       transition: transform 0.2s;
     }
@@ -85,7 +102,7 @@
       transform: translateY(-3px);
     }
 
-    /* Tables & lists */
+    /* ================= TABLES & LISTS ================= */
     table {
       background-color: #ffffff;
       border-radius: 6px;
@@ -94,13 +111,12 @@
     }
 
     table th {
-      background-color: #adb5bd; /* grey header for contrast */
+      background-color: #adb5bd;
       color: black;
     }
 
     #documentList li {
       background-color: #ffffff;
-      border: none;
       border-bottom: 1px solid #dee2e6;
       transition: background-color 0.2s;
     }
@@ -126,31 +142,15 @@
       color: black;
     }
 
-    /* Buttons */
-    .btn-primary {
-      background-color: #0d6efd;
-      border-color: #0d6efd;
-    }
-    .btn-primary:hover { background-color: #0b5ed7; border-color: #0a58ca; }
+    .d-none { display: none !important; }
 
-    .btn-success {
-      background-color: #198754;
-      border-color: #198754;
-    }
-    .btn-success:hover { background-color: #157347; border-color: #146c43; }
-
-    .btn-danger {
-      background-color: #dc3545; /* red for logout and delete */
-      border-color: #dc3545;
-    }
-    .btn-danger:hover { background-color: #bb2d3b; border-color: #b02a37; }
   </style>
 </head>
 
-<body class="container mt-4">
+<body>
 
-<!-- Top Bar -->
-<div class="d-flex justify-content-between align-items-center top-bar">
+<!-- ================= TOP BAR ================= -->
+<div class="top-bar">
   <h3 onclick="showMainDashboard()">Vendor Dashboard</h3>
 
   <div class="dropdown">
@@ -159,97 +159,94 @@
     </button>
     <ul class="dropdown-menu dropdown-menu-end">
       <li><a class="dropdown-item" href="#" onclick="showProfileForm()">Update Profile</a></li>
-      <li><a class="dropdown-item btn-danger text-white" href="#" onclick="logout()">Logout</a></li>
+      <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
     </ul>
   </div>
 </div>
 
-<div class="row">
-  <!-- Sidebar -->
-  <div class="col-md-2">
-    <ul class="list-group sidebar">
-      <li class="list-group-item" onclick="loadChatbots()">Chatbots</li>
-      <li class="list-group-item" onclick="loadDocuments()">Documents</li>
-    </ul>
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+  <button onclick="showMainDashboard()">Analytics</button>
+  <button onclick="loadChatbots()">Chatbots</button>
+  <button onclick="loadDocuments()">Documents</button>
+</div>
+
+<!-- ================= MAIN CONTENT ================= -->
+<div class="main-content">
+
+  <!-- Analytics -->
+  <div id="analyticsSection">
+    <h4 class="mb-3">Vendor Analytics</h4>
+
+    <div id="userAnalyticsCard" class="card mb-3 p-3">
+      <label class="form-label">Select User (optional)</label>
+      <select id="analyticsUserSelect" class="form-select mb-2">
+        <option value="">All Users</option>
+      </select>
+      <div id="userAnalyticsContent" class="mt-2">
+        <p>Select a user to see their data</p>
+      </div>
+    </div>
+
+    <div id="analyticsList"
+         class="d-grid gap-3"
+         style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+    </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="col-md-10">
+  <!-- Chatbots -->
+  <div id="chatbotsSection" class="d-none">
+    <h4 class="mb-3">Chatbots</h4>
 
-    <!-- Analytics -->
-    <div id="analyticsSection">
-      <h4 class="mb-3">Vendor Analytics</h4>
-
-      <!-- User Selection Card -->
-      <div id="userAnalyticsCard" class="card mb-3 p-3">
-        <label class="form-label">Select User (optional)</label>
-        <select id="analyticsUserSelect" class="form-select mb-2">
-          <option value="">All Users</option>
-        </select>
-        <div id="userAnalyticsContent" class="mt-2">
-          <p>Select a user to see their data</p>
-        </div>
-      </div>
-
-      <!-- Container for other analytics cards -->
-      <div id="analyticsList" class="d-grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
-      </div>
-    </div>
-
-    <!-- Chatbots -->
-    <div id="chatbotsSection" class="d-none">
-      <h4 class="mb-3">Chatbots</h4>
-
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>LLM</th>
-            <th>Vector Store</th>
-            <th>Mode</th>
-          </tr>
-        </thead>
-        <tbody id="chatbotList"></tbody>
-      </table>
-    </div>
-
-    <!-- Documents -->
-    <div id="documentsSection" class="d-none">
-      <h4 class="mb-3">Documents</h4>
-
-      <div class="card mb-3 p-3">
-        <label class="form-label">Select Chatbot</label>
-        <select id="documentChatbotSelect" class="form-select mb-2"></select>
-
-        <label class="form-label">Upload Documents</label>
-        <input type="file" class="form-control" multiple onchange="handleDocumentFileSelect(event)">
-
-        <ul id="selectedFilesPreview" class="mt-2 small text-muted"></ul>
-
-        <button class="btn btn-danger mt-2" onclick="uploadDocuments()">Upload</button>
-      </div>
-
-      <ul id="documentList" class="list-group"></ul>
-    </div>
-
-    <!-- Profile -->
-    <div id="profileSection" class="d-none">
-      <h4 class="mb-3">Update Profile</h4>
-
-      <div class="mb-2">
-        <label>Name</label>
-        <input id="vendorName" class="form-control">
-      </div>
-
-      <div class="mb-2">
-        <label>Email</label>
-        <input id="vendorEmail" class="form-control">
-      </div>
-
-      <button class="btn btn-danger" onclick="saveProfile()">Save</button>
-    </div>
-
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>LLM</th>
+          <th>Vector Store</th>
+          <th>Mode</th>
+        </tr>
+      </thead>
+      <tbody id="chatbotList"></tbody>
+    </table>
   </div>
+
+  <!-- Documents -->
+  <div id="documentsSection" class="d-none">
+    <h4 class="mb-3">Documents</h4>
+
+    <div class="card mb-3 p-3">
+      <label class="form-label">Select Chatbot</label>
+      <select id="documentChatbotSelect" class="form-select mb-2"></select>
+
+      <label class="form-label">Upload Documents</label>
+      <input type="file" class="form-control" multiple onchange="handleDocumentFileSelect(event)">
+
+      <ul id="selectedFilesPreview" class="mt-2 small text-muted"></ul>
+
+      <button class="btn btn-danger mt-2" onclick="uploadDocuments()">Upload</button>
+    </div>
+
+    <ul id="documentList" class="list-group"></ul>
+  </div>
+
+  <!-- Profile -->
+  <div id="profileSection" class="d-none">
+    <h4 class="mb-3">Update Profile</h4>
+
+    <div class="mb-2">
+      <label>Name</label>
+      <input id="vendorName" class="form-control">
+    </div>
+
+    <div class="mb-2">
+      <label>Email</label>
+      <input id="vendorEmail" class="form-control">
+    </div>
+
+    <button class="btn btn-danger" onclick="saveProfile()">Save</button>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
