@@ -12,6 +12,8 @@ from modules.documents.schemas.document_schema import DocumentRead
 from modules.documents.services import document_service
 from modules.chatbots.schemas.chatbot_schema import ChatbotRead
 from modules.chatbots.services import chatbot_service
+from modules.conversations.services import conversation_service
+from modules.users.services import user_service
 
 
 router = APIRouter(tags=["Admins"])
@@ -111,14 +113,38 @@ def most_chatbots(db: Session = Depends(get_db), current_admin: Admin = Depends(
 def most_used_chatbot(db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
     return admin_service.get_most_used_chatbot(db)
 
-@router.get("/total-tokens/{vendor_id}")
-def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
-    return admin_service.get_total_tokens_by_vendor(db, vendor_id)
-
 @router.get("/all-vendors", response_model=List[VendorRead])
 def list_vendors(db: Session = Depends(get_db)):
     return vendor_service.list_vendors(db)
 
+@router.get("/total-vendors")
+def count_of_vendors(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> int:
+    return vendor_service.count_of_vendors(db)
+
+@router.get("/total-users")
+def count_of_users(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> int:
+    return user_service.count_of_users(db)
+
 @router.get("/", response_model=List[ChatbotRead])
 def get_chatbots(db: Session = Depends(get_db)):
     return chatbot_service.get_chatbots(db)
+
+@router.get("/total-chatbots")
+def count_of_chatbots(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> int:
+    return chatbot_service.count_of_chatbots(db)
+
+@router.get("/total-messages")
+def count_of_messages(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> int:
+    return conversation_service.count_of_messages(db)
+
+@router.get("/total-conversations")
+def count_unique_sessions(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) ->int:
+    return conversation_service.count_unique_sessions(db)
+
+@router.get("/top-chatbot")
+def top_chatbot(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> str:
+    return chatbot_service.top_performing_chatbot_name(db)
+
+@router.get("/total-tokens/{vendor_id}")
+def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_total_tokens_by_vendor(db, vendor_id)

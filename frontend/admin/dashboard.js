@@ -28,6 +28,50 @@ function showSection(id) {
   if (id === "llms") loadLLMs();
 }
 
+/* ===================== DASHBOARD STATS ===================== */
+async function loadDashboardStats() {
+  try {
+    const [
+      vendorsRes,
+      usersRes,
+      chatbotsRes,
+      messagesRes,
+      conversationsRes
+    ] = await Promise.all([
+      fetch(`${API_BASE}/admins/total-vendors`, { headers }),
+      fetch(`${API_BASE}/admins/total-users`, { headers }),
+      fetch(`${API_BASE}/admins/total-chatbots`, { headers }),
+      fetch(`${API_BASE}/admins/total-messages`, { headers }),
+      fetch(`${API_BASE}/admins/total-conversations`, { headers })
+    ]);
+
+    const [
+      totalVendors,
+      totalUsers,
+      totalChatbots,
+      totalMessages,
+      totalConversations
+    ] = await Promise.all([
+      vendorsRes.json(),
+      usersRes.json(),
+      chatbotsRes.json(),
+      messagesRes.json(),
+      conversationsRes.json()
+    ]);
+
+    document.getElementById("totalVendors").innerText = totalVendors;
+    document.getElementById("totalUsers").innerText = totalUsers;
+    document.getElementById("totalChatbots").innerText = totalChatbots;
+    document.getElementById("totalMessages").innerText = totalMessages;
+    document.getElementById("totalConversations").innerText = totalConversations;
+
+  } catch (err) {
+    console.error("Failed to load dashboard stats", err);
+  }
+}
+
+
+
 /* ===================== DELETE CHATBOT ===================== */
 async function deleteChatbot(chatbotId) {
   if (!confirm("Are you sure you want to delete this chatbot?")) return;
@@ -81,16 +125,39 @@ async function loadChatbots() {
       </td>
       <td>${bot.vector_store_type}</td>
       <td>${bot.mode}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary me-2" onclick="duplicateChatbot(${bot.id})">Duplicate</button>
-        <button class="btn btn-sm btn-outline-warning me-2" onclick="openUpdateChatbotModal(${JSON.stringify(bot).replace(/'/g,"\\'")})">Edit</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="deleteChatbot(${bot.id})">Delete</button>
-      </td>
     `;
 
+    // Actions td with vertical buttons
+    const tdActions = document.createElement("td");
+    tdActions.className = "d-flex flex-column";
+    tdActions.style.gap = "4px";
+
+    // Duplicate button
+    const dupBtn = document.createElement("button");
+    dupBtn.className = "btn btn-sm btn-outline-primary";
+    dupBtn.textContent = "Duplicate";
+    dupBtn.addEventListener("click", () => duplicateChatbot(bot.id));
+    tdActions.appendChild(dupBtn);
+
+    // Edit button
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn btn-sm btn-outline-warning";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => openUpdateChatbotModal(bot));
+    tdActions.appendChild(editBtn);
+
+    // Delete button
+    const delBtn = document.createElement("button");
+    delBtn.className = "btn btn-sm btn-outline-danger";
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", () => deleteChatbot(bot.id));
+    tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdActions);
     tbody.appendChild(tr);
   });
 
+  // Load most-used chatbot analytics
   const analyticsRes = await fetch(`${API_BASE}/admins/most-used-chatbot`, { headers });
   const analytics = await analyticsRes.json();
 
@@ -103,6 +170,7 @@ async function loadChatbots() {
     mostUsedChatbot.innerText = "No analytics data available";
   }
 }
+
 
 /* ===================== CHATBOT MODAL ===================== */
 function openAddChatbotModal() {
@@ -292,27 +360,46 @@ async function submitChatbotForm(event) {
 async function loadVendors() {
   const res = await fetch(`${API_BASE}/admins/all-vendors`, { headers });
   const vendors = await res.json();
-  globalVendors = vendors; // <--- save globally for modal use
+  globalVendors = vendors; // save globally for modal use
 
-  vendorList.innerHTML = "";
-  vendorSelect.innerHTML = "";
+  // Populate vendor list (for vendor card)
+  const vendorListEl = document.getElementById("vendorList");
+  vendorListEl.innerHTML = "";
 
   vendors.forEach(v => {
     vendorList.innerHTML += `
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        ${v.name}
-        <span class="badge bg-secondary">${v.status}</span>
-        <button class="btn btn-sm btn-outline-warning"
-          onclick="updateVendorStatus(${v.id})">
-          Update Status
-        </button>
+      <li class="list-group-item d-flex justify-content-between align-items-start">
+        <div>${v.name}</div>
+        <div class="d-flex flex-column align-items-end gap-2">
+          <span class="badge bg-secondary">${v.status}</span>
+          <button class="btn btn-sm btn-outline-warning"
+            onclick="updateVendorStatus(${v.id})">
+            Update Status
+          </button>
+        </div>
       </li>`;
-
-    vendorSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`;
   });
 
-  vendorSelect.onchange = loadTotalTokens;
+  // Populate analytics dropdown
+  const analyticsSelect = document.getElementById("vendorSelectAnalytics");
+  analyticsSelect.innerHTML = "";
+  vendors.forEach(v => {
+    const option = document.createElement("option");
+    option.value = v.id;
+    option.text = v.name;
+    analyticsSelect.appendChild(option);
+  });
 
+  // Load total tokens on change
+  analyticsSelect.onchange = loadTotalTokensAnalytics;
+
+  // Load for first vendor by default
+  if (vendors.length > 0) {
+    analyticsSelect.value = vendors[0].id;
+    loadTotalTokensAnalytics();
+  }
+
+  // Most users vendor
   const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
   let usersData = await usersRes.json();
   if (Array.isArray(usersData)) usersData = usersData[0];
@@ -327,6 +414,7 @@ async function loadVendors() {
     mostUsersVendor.innerText = "No data available";
   }
 
+  // Most chatbots vendor
   const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
   let botsData = await botsRes.json();
   if (Array.isArray(botsData)) botsData = botsData[0];
@@ -342,6 +430,20 @@ async function loadVendors() {
   }
 }
 
+async function loadTotalTokensAnalytics() {
+  const vendorId = document.getElementById("vendorSelectAnalytics").value;
+  if (!vendorId) return;
+
+  const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
+  const data = await res.json();
+
+  document.getElementById("totalTokensAnalytics").innerHTML = `
+    <strong>Total Tokens Used:</strong> ${data.total_tokens}
+  `;
+}
+
+
+
 async function updateVendorStatus(id) {
   const status = prompt("Enter status (active / inactive):");
   if (!status) return;
@@ -355,15 +457,34 @@ async function updateVendorStatus(id) {
   loadVendors();
 }
 
+// async function loadTotalTokens() {
+//   const vendorId = vendorSelect.value;
+//   if (!vendorId) return;
+
+//   const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
+//   const data = await res.json();
+
+//   totalTokens.innerHTML = `<strong>Total Tokens Used:</strong> ${data.total_tokens}`;
+// }
+
 async function loadTotalTokens() {
   const vendorId = vendorSelect.value;
   if (!vendorId) return;
 
-  const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
+    const data = await res.json();
 
-  totalTokens.innerHTML = `<strong>Total Tokens Used:</strong> ${data.total_tokens}`;
+    // Put total tokens in the analytics card (not inside vendor list)
+    document.getElementById("totalTokens").innerHTML = `
+      <strong>Total Tokens Used by ${vendorSelect.options[vendorSelect.selectedIndex].text}:</strong> ${data.total_tokens}
+    `;
+  } catch (err) {
+    console.error(err);
+    document.getElementById("totalTokens").innerText = "Failed to load total tokens";
+  }
 }
+
 
 /* ===================== DOCUMENTS ===================== */
 async function loadDocuments() {
@@ -401,8 +522,8 @@ async function loadEmbeddings() {
           <strong>${e.model_name}</strong><br>
           <small class="text-muted">${e.provider}</small>
         </div>
-        <div>
-          <button class="btn btn-sm btn-outline-warning me-2"
+        <div class="d-flex flex-column gap-1">
+          <button class="btn btn-sm btn-outline-warning"
             onclick="openUpdateEmbeddingModal(${e.id}, '${e.model_name.replace(/'/g,"\\'")}', '${e.provider.replace(/'/g,"\\'")}', '${e.path?.replace(/'/g,"\\'") || ""}')">
             Update
           </button>
@@ -420,6 +541,7 @@ async function loadEmbeddings() {
     list.innerHTML = "<li class='list-group-item text-danger'>Failed to load embeddings</li>";
   }
 }
+
 
 function openAddEmbeddingModal() {
   const modal = new bootstrap.Modal(document.getElementById("embeddingModal"));
@@ -501,8 +623,8 @@ async function loadLLMs() {
           <strong>${l.name}</strong> (${l.status})<br>
           <small class="text-muted">Provider: ${l.provider} | Embedding: ${l.embedding?.model_name || "None"}</small>
         </div>
-        <div>
-          <button class="btn btn-sm btn-outline-warning me-2"
+        <div class="d-flex flex-column gap-1">
+          <button class="btn btn-sm btn-outline-warning"
             onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}', '${l.status}')">
             Update
           </button>
@@ -520,6 +642,7 @@ async function loadLLMs() {
     list.innerHTML = "<li class='list-group-item text-danger'>Failed to load LLMs</li>";
   }
 }
+
 
 async function openAddLLMModal() {
   const modal = new bootstrap.Modal(document.getElementById("llmModal"));
@@ -666,23 +789,57 @@ async function submitProfileForm(event) {
   }
 }
 
-function openPassword() { alert("Use PUT /admins/change-password"); }
+function openPassword() {
+  const modal = new bootstrap.Modal(document.getElementById("passwordModal"));
+  document.getElementById("passwordForm").reset();
+  modal.show();
+}
+
+async function submitPasswordForm(event) {
+  event.preventDefault();
+  
+  const old_password = document.getElementById("currentPassword").value;
+  const new_password = document.getElementById("newPassword").value;
+  const confirmNewPassword = document.getElementById("confirmNewPassword").value;
+
+  if (new_password !== confirmNewPassword) {
+    alert("New passwords do not match");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/admins/change-password`, {
+      method: "PUT",
+      headers: headers,
+      body: JSON.stringify({ old_password, new_password })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || "Failed to change password");
+    }
+
+    alert("Password changed successfully!");
+    bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
+  } catch (err) {
+    console.error(err);
+    alert(`Error: ${err.message}`);
+  }
+}
+
 
 /* ===================== LOGOUT ===================== */
 function logout() {
   localStorage.clear();
-  window.location.href = "/login.html";
+  window.location.href = "/index.html";
 }
 
 function showAnalytics() {
-  // Hide all sections
   document.querySelectorAll(".section").forEach(s => s.classList.add("d-none"));
-  
-  // Show the analytics section
   document.getElementById("dashboard").classList.remove("d-none");
 
-  // Reload analytics data
-  loadChatbots(); // Most used chatbot
-  loadVendors();  // Vendor analytics
+  loadDashboardStats(); // 🔥 NEW
+  loadChatbots();       // Most used chatbot
+  loadVendors();        // Vendor analytics
 }
 showAnalytics();

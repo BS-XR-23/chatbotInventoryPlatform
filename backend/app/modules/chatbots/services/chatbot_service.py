@@ -1,9 +1,8 @@
 from fastapi import UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
-from sqlalchemy import func
-from sqlalchemy import func
 from typing import List, Optional
 from uuid import uuid4
 from core.enums import SenderType, ChatbotMode
@@ -70,6 +69,27 @@ def create_chatbot_with_documents(
 def get_chatbots(db: Session) -> List[Chatbot]:
     return db.query(Chatbot).all()
 
+def count_of_chatbots(db : Session) -> int:
+    return db.query(func.count(Chatbot.id)).scalar()
+
+def top_performing_chatbot_name(db: Session) -> str | None:
+    result = (
+        db.query(
+            Chatbot.name
+        )
+        .join(Conversation, Conversation.chatbot_id == Chatbot.id)
+        .group_by(Chatbot.id)
+        .order_by(
+            (
+                func.count(Conversation.id) /
+                func.count(func.distinct(Conversation.session_id))
+            ).desc()
+        )
+        .first()
+    )
+
+    return result[0] if result else None
+
 def get_vendor_chatbots(db: Session, vendor_id: int) -> List[Chatbot]:
     return db.query(Chatbot).filter(Chatbot.vendor_id == vendor_id).all()
 
@@ -135,13 +155,6 @@ def get_latest_vector_db(chatbot: Chatbot) -> Optional[VectorDB]:
         active_vdbs,
         key=lambda v: (v.updated_at or v.created_at)
     )
-
-# def get_chatbots_for_user(db: Session, user_id: int):
-
-#     chatbot_ids = db.query(Conversation.chatbot_id).filter(Conversation.user_id == user_id).distinct().all()
-#     chatbot_ids = [c[0] for c in chatbot_ids]  # extract IDs
-
-#     return db.query(Chatbot).filter(Chatbot.id.in_(chatbot_ids)).all()
 
 def handle_conversation_singleturn(
     db: Session,

@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from collections import defaultdict
 from typing import List, Dict
 from modules.conversations.models.conversation_model import Conversation
@@ -35,6 +36,11 @@ def get_conversations_with_a_chatbot(db: Session, user_id: int, chatbot_id: int)
 
     return dict(sessions)
 
+def count_of_messages(db : Session) ->int:
+    return db.query(func.count(Conversation.id)).scalar()
+
+def count_unique_sessions(db: Session) -> int:
+    return db.query(func.count(func.distinct(Conversation.session_id))).scalar()
 
 def delete_conversation(db: Session, conversation_id: int) -> bool:
     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -43,4 +49,6 @@ def delete_conversation(db: Session, conversation_id: int) -> bool:
     db.delete(conv)
     db.commit()
     return True
+
+
 

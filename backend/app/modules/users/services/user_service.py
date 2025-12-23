@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from modules.users.models.user_model import User
 from modules.users.schemas.user_schema import UserCreate, UserUpdate
@@ -23,6 +24,9 @@ def create_user(db: Session, user_data: UserCreate) -> User:
     db.commit()
     db.refresh(new_user)
     return new_user
+
+def count_of_users(db: Session) -> int:
+    return db.query(func.count(User.id)).scalar()
 
 def get_users_by_vendor(db: Session, vendor_id: int) -> List[User]:
     return db.query(User).filter(User.vendor_id == vendor_id).all()
