@@ -237,13 +237,22 @@
 
     <!-- Vendors Section -->
     <div id="vendors" class="section d-none">
-      <h4>Vendors</h4>
+      <div class="card mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <h4 class="m-0">Vendors</h4>
+          <button class="btn btn-primary" onclick="openCreateVendorModal()">
+            Create Vendor
+          </button>
+        </div>
+      </div>
+
       <div class="card mb-4">
         <div class="card-body">
           <ul id="vendorList" class="list-group"></ul>
         </div>
       </div>
     </div>
+
 
     <!-- Documents Section -->
     <div id="documents" class="section d-none">
@@ -298,26 +307,53 @@
         <div class="modal-body">
           <input type="hidden" id="chatbotId">
 
+          <!-- Name -->
           <div class="mb-3">
             <label for="chatbotName" class="form-label">Name</label>
             <input type="text" class="form-control" id="chatbotName" required>
           </div>
 
+          <!-- Description (NEW) -->
+          <div class="mb-3">
+            <label for="chatbotDescription" class="form-label">Description</label>
+            <textarea
+              class="form-control"
+              id="chatbotDescription"
+              rows="4"
+              placeholder="Optional description for this chatbot"
+            ></textarea>
+          </div>
+
+          <!-- System Prompt (NEW) -->
+          <div class="mb-3">
+            <label for="chatbotSystemPrompt" class="form-label">System Prompt</label>
+            <textarea
+              class="form-control"
+              id="chatbotSystemPrompt"
+              rows="8"
+              placeholder="Optional system instructions for chatbot behavior"
+            ></textarea>
+          </div>
+
+          <!-- Vendor -->
           <div class="mb-3">
             <label for="chatbotVendorId" class="form-label">Vendor</label>
             <select class="form-select" id="chatbotVendorId" required></select>
           </div>
 
+          <!-- LLM -->
           <div class="mb-3">
             <label for="chatbotLLMId" class="form-label">LLM</label>
             <select class="form-select" id="chatbotLLMId" onchange="updateLLMPath()" required></select>
           </div>
 
+          <!-- LLM Path -->
           <div class="mb-3">
             <label for="chatbotLLMPath" class="form-label">LLM Path</label>
             <input type="text" class="form-control" id="chatbotLLMPath" readonly>
           </div>
 
+          <!-- Vector Store -->
           <div class="mb-3">
             <label for="chatbotVectorStore" class="form-label">Vector Store</label>
             <select class="form-select" id="chatbotVectorStore" onchange="updateVectorConfig()">
@@ -329,11 +365,13 @@
             </select>
           </div>
 
+          <!-- Vector Config -->
           <div class="mb-3">
             <label for="chatbotVectorConfig" class="form-label">Vector Store Config (JSON)</label>
             <textarea class="form-control" id="chatbotVectorConfig" rows="3"></textarea>
           </div>
 
+          <!-- Mode -->
           <div class="mb-3">
             <label for="chatbotMode" class="form-label">Mode</label>
             <select class="form-select" id="chatbotMode">
@@ -345,7 +383,13 @@
           <!-- =================== MULTI-FILE UPLOAD =================== -->
           <div class="mb-3">
             <label for="chatbotFiles" class="form-label">Upload Documents</label>
-            <input type="file" class="form-control" id="chatbotFiles" multiple onchange="handleChatbotFileSelect(event)">
+            <input
+              type="file"
+              class="form-control"
+              id="chatbotFiles"
+              multiple
+              onchange="handleChatbotFileSelect(event)"
+            >
             <ul id="chatbotFilesPreview" class="mt-2"></ul>
           </div>
 
@@ -354,6 +398,84 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Chatbot</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<!-- ================= CREATE VENDOR MODAL ================= -->
+  <div class="modal fade" id="createVendorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" onsubmit="submitCreateVendor(event)">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Vendor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="mb-3">
+            <label class="form-label">Vendor Name</label>
+            <input
+              type="text"
+              id="vendorName"
+              class="form-control"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input
+              type="email"
+              id="vendorEmail"
+              class="form-control"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Domain</label>
+            <input
+              type="text"
+              id="vendorDomain"
+              class="form-control"
+              placeholder="example.com"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input
+              type="password"
+              id="vendorPassword"
+              class="form-control"
+              required
+            >
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select id="vendorStatus" class="form-select">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Create Vendor
+          </button>
         </div>
       </form>
     </div>
