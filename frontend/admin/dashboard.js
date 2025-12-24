@@ -176,10 +176,14 @@ async function loadChatbots() {
 function openAddChatbotModal() {
   const modal = new bootstrap.Modal(document.getElementById("chatbotModal"));
   document.getElementById("chatbotForm").reset();
+
+  document.getElementById("chatbotId").value = "";
+  document.getElementById("chatbotDescription").value = "";
+  document.getElementById("chatbotSystemPrompt").value = "";
+
   selectedChatbotFiles = [];
   renderSelectedChatbotFiles();
   document.getElementById("chatbotModalTitle").innerText = "Add Chatbot";
-  document.getElementById("chatbotId").value = "";
 
   // Populate LLM dropdown
   const llmSelect = document.getElementById("chatbotLLMId");
@@ -213,6 +217,8 @@ function openUpdateChatbotModal(bot) {
 
   document.getElementById("chatbotId").value = bot.id;
   document.getElementById("chatbotName").value = bot.name;
+  document.getElementById("chatbotDescription").value = bot.description || "";
+  document.getElementById("chatbotSystemPrompt").value = bot.system_prompt || "";
 
   // LLM dropdown
   const llmSelect = document.getElementById("chatbotLLMId");
@@ -240,10 +246,10 @@ function openUpdateChatbotModal(bot) {
 
   document.getElementById("chatbotLLMPath").value = bot.llm_path || "";
   document.getElementById("chatbotVectorStore").value = bot.vector_store_type;
-  document.getElementById("chatbotVectorConfig").value = JSON.stringify(bot.vector_store_config || {}, null, 2);
+  document.getElementById("chatbotVectorConfig").value =
+    JSON.stringify(bot.vector_store_config || {}, null, 2);
   document.getElementById("chatbotMode").value = bot.mode;
 
-  // Reset selected files
   selectedChatbotFiles = [];
   renderSelectedChatbotFiles();
 
@@ -317,6 +323,8 @@ async function submitChatbotForm(event) {
 
   const id = document.getElementById("chatbotId").value;
   const name = document.getElementById("chatbotName").value;
+  const description = document.getElementById("chatbotDescription").value;
+  const system_prompt = document.getElementById("chatbotSystemPrompt").value;
   const llm_id = document.getElementById("chatbotLLMId").value;
   const llm_path = document.getElementById("chatbotLLMPath").value;
   const vendor_id = document.getElementById("chatbotVendorId").value;
@@ -327,34 +335,39 @@ async function submitChatbotForm(event) {
   const formData = new FormData();
   formData.append("name", name);
   formData.append("vendor_id", vendor_id);
+  formData.append("description", description || "");
+  formData.append("system_prompt", system_prompt || "");
   formData.append("llm_id", llm_id);
   formData.append("llm_path", llm_path);
   formData.append("vector_store_type", vector_store_type);
   formData.append("vector_store_config", vector_store_config);
   formData.append("mode", mode);
 
-  // Append all selected files
   selectedChatbotFiles.forEach(file => formData.append("files", file));
 
-  const url = id ? `${API_BASE}/chatbots/${id}` : `${API_BASE}/chatbots/create`;
+  const url = id
+    ? `${API_BASE}/chatbots/${id}`
+    : `${API_BASE}/chatbots/create`;
+
   const method = id ? "PUT" : "POST";
 
   await fetch(url, {
     method,
     headers: {
-      "Authorization": `Bearer ${token}` // Do NOT set Content-Type; browser handles it
+      "Authorization": `Bearer ${token}`
     },
     body: formData
   });
 
-  // Clear selected files after submission
   selectedChatbotFiles = [];
   renderSelectedChatbotFiles();
 
-  bootstrap.Modal.getInstance(document.getElementById("chatbotModal")).hide();
+  bootstrap.Modal
+    .getInstance(document.getElementById("chatbotModal"))
+    .hide();
+
   loadChatbots();
 }
-
 
 /* ===================== VENDORS ===================== */
 async function loadVendors() {
@@ -457,16 +470,6 @@ async function updateVendorStatus(id) {
   loadVendors();
 }
 
-// async function loadTotalTokens() {
-//   const vendorId = vendorSelect.value;
-//   if (!vendorId) return;
-
-//   const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
-//   const data = await res.json();
-
-//   totalTokens.innerHTML = `<strong>Total Tokens Used:</strong> ${data.total_tokens}`;
-// }
-
 async function loadTotalTokens() {
   const vendorId = vendorSelect.value;
   if (!vendorId) return;
@@ -483,6 +486,50 @@ async function loadTotalTokens() {
     console.error(err);
     document.getElementById("totalTokens").innerText = "Failed to load total tokens";
   }
+}
+
+function openCreateVendorModal() {
+  const modal = new bootstrap.Modal(
+    document.getElementById("createVendorModal")
+  );
+
+  document.getElementById("vendorName").value = "";
+  document.getElementById("vendorEmail").value = "";
+  document.getElementById("vendorDomain").value = "";
+  document.getElementById("vendorPassword").value = "";
+  document.getElementById("vendorStatus").value = "active";
+
+  modal.show();
+}
+
+async function submitCreateVendor(event) {
+  event.preventDefault();
+
+  const payload = {
+    name: document.getElementById("vendorName").value,
+    email: document.getElementById("vendorEmail").value,
+    domain: document.getElementById("vendorDomain").value,
+    password: document.getElementById("vendorPassword").value,
+    status: document.getElementById("vendorStatus").value
+  };
+
+  const res = await fetch(`${API_BASE}/vendors/create`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert(err.detail || "Failed to create vendor");
+    return;
+  }
+
+  bootstrap.Modal
+    .getInstance(document.getElementById("createVendorModal"))
+    .hide();
+
+  loadVendors(); // refresh vendor list
 }
 
 

@@ -7,12 +7,14 @@ from modules.vendors.services import vendor_service
 from modules.vendors.models.vendor_model import Vendor
 from modules.auth.vendors import auth_vendor
 from modules.vendors.models.vendor_model import Vendor
+from modules.admins.models.admin_model import Admin
+from modules.auth.admins import auth_admin
 
 
 router = APIRouter(tags=["Vendors"])
 
 @router.post("/create", response_model=VendorRead)
-def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
+def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
     new_vendor = vendor_service.create_vendor(db, vendor)
     if not new_vendor:
         raise HTTPException(status_code=400, detail="Email already registered")
