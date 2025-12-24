@@ -18,8 +18,18 @@ class VendorUpdate(BaseModel):
     domain: Optional[str] = None
     
 
+class VendorWithStats(BaseModel):
+    id: int
+    name: str
+    user_count: int
+    chatbot_count: int
+
 class VendorStatusUpdate(BaseModel):
     status: Optional[VendorStatus] = None
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 class VendorRead(VendorBase):
     id: int

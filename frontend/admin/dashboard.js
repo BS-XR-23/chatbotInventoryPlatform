@@ -380,9 +380,14 @@ async function loadVendors() {
   vendorListEl.innerHTML = "";
 
   vendors.forEach(v => {
-    vendorList.innerHTML += `
+    vendorListEl.innerHTML += `
       <li class="list-group-item d-flex justify-content-between align-items-start">
-        <div>${v.name}</div>
+        <div>
+          <div><strong>${v.name}</strong></div>
+          <div class="text-muted small">
+            Users: ${v.user_count || 0} | Chatbots: ${v.chatbot_count || 0}
+          </div>
+        </div>
         <div class="d-flex flex-column align-items-end gap-2">
           <span class="badge bg-secondary">${v.status}</span>
           <button class="btn btn-sm btn-outline-warning"
@@ -442,6 +447,7 @@ async function loadVendors() {
     mostChatbotsVendor.innerText = "No data available";
   }
 }
+
 
 async function loadTotalTokensAnalytics() {
   const vendorId = document.getElementById("vendorSelectAnalytics").value;

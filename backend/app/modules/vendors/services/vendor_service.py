@@ -1,12 +1,14 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from modules.vendors.models.vendor_model import Vendor
-from modules.vendors.schemas.vendor_schema import VendorCreate, VendorUpdate
+from modules.vendors.schemas.vendor_schema import VendorCreate, VendorUpdate, VendorWithStats
 from modules.auth.vendors import auth_vendor
 from datetime import datetime, timedelta
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
+from modules.users.models.user_model import User
 
 def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
     db_vendor = db.query(Vendor).filter(Vendor.email == vendor_data.email).first()
@@ -25,9 +27,46 @@ def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
     db.refresh(new_vendor)
     return new_vendor
 
+def change_vendor_password(
+    db: Session,
+    vendor_id: int,
+    current_password: str,
+    new_password: str
+):
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+
+    if not vendor:
+        return None, "Vendor not found"
+
+    if not auth_vendor.verify_password(current_password, vendor.hashed_password):
+        return None, "Incorrect old password"
+
+    vendor.hashed_password = auth_vendor.get_password_hash(new_password)
+    db.commit()
+    db.refresh(vendor)
+    
+    return vendor, None
+
 
 def list_vendors(db: Session) -> List[Vendor]:
     return db.query(Vendor).all()
+
+def list_vendors_with_stats(db: Session) -> List[VendorWithStats]:
+    vendors = db.query(Vendor).all()
+    result = []
+
+    for v in vendors:
+        user_count = db.query(User).filter(User.vendor_id == v.id).count()
+        chatbot_count = db.query(Chatbot).filter(Chatbot.vendor_id == v.id).count()
+
+        result.append(VendorWithStats(
+            id=v.id,
+            name=v.name,
+            user_count=user_count,
+            chatbot_count=chatbot_count
+        ))
+
+    return result
 
 def count_of_vendors(db: Session) -> int:
     return db.query(func.count(Vendor.id)).scalar()

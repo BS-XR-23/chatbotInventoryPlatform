@@ -164,13 +164,13 @@
 <!-- ================= TOP BAR ================= -->
 <div class="top-bar">
   <h3 onclick="showMainDashboard()">Vendor Dashboard</h3>
-
   <div class="dropdown">
     <button class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">
       Profile
     </button>
     <ul class="dropdown-menu dropdown-menu-end">
       <li><a class="dropdown-item" href="#" onclick="showProfileForm()">Update Profile</a></li>
+      <li><a class="dropdown-item" href="#" onclick="showChangePasswordModal()">Change Password</a></li>
       <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
     </ul>
   </div>
@@ -247,7 +247,7 @@
 
     <ul id="documentList" class="list-group"></ul>
   </div>
-
+  
   <!-- Profile -->
   <div id="profileSection" class="d-none">
     <h4 class="mb-3">Update Profile</h4>
@@ -262,7 +262,42 @@
       <input id="vendorEmail" class="form-control">
     </div>
 
+    <div class="mb-2">
+      <label>Domain</label>
+      <input id="vendorDomain" class="form-control">
+    </div>
+
     <button class="btn btn-danger" onclick="saveProfile()">Save</button>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label">Current Password</label>
+            <input type="password" id="currentPassword" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">New Password</label>
+            <input type="password" id="newPassword" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
+            <input type="password" id="confirmNewPassword" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" onclick="submitChangePassword()">Submit</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
