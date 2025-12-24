@@ -21,6 +21,7 @@ class VendorUpdate(BaseModel):
 class VendorWithStats(BaseModel):
     id: int
     name: str
+    status: VendorStatus
     user_count: int
     chatbot_count: int
 

@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, JSON, DateTime
 from sqlalchemy.orm import relationship
 from db.database import Base
+from datetime import datetime
 from core.enums import ChatbotMode, VectorStoreType
 
 class Chatbot(Base):
@@ -15,6 +16,7 @@ class Chatbot(Base):
     llm_path = Column(String, nullable=False) 
     mode = Column(Enum(ChatbotMode), default=ChatbotMode.private)
     is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     vector_store_type = Column(
         Enum(VectorStoreType, native_enum=False),
         default=VectorStoreType.chroma,

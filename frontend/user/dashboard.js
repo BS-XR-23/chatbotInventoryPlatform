@@ -1,52 +1,105 @@
 // ------------------ API & Auth ------------------
 const API_BASE = "http://127.0.0.1:9000"; // change if needed
 const token = localStorage.getItem("access_token");
-const role = localStorage.getItem("role");
+// const role = localStorage.getItem("role");
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-// Redirect if not logged in or role is not "user"
-if (!token || role !== "user") {
-    window.location.href = "/login.html";
+if (!token) {
+    window.location.href = "/index.html";
 }
+
+console.log(localStorage.getItem("user"));
 
 // ------------------ Logout ------------------
 function logout() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
-    window.location.href = "/login.html";
+    window.location.href = "/index.html";
 }
 
-// ------------------ Profile Actions ------------------
-async function updateProfile() {
-    const endpoint = `${API_BASE}/users/update/${currentUser.id}`;
+async function ensureCurrentUser() {
+    if (currentUser.id) return;
+    try {
+        const res = await fetch(`${API_BASE}/users/me`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
 
-    const newName = prompt("Enter new name", currentUser.name);
-    const newEmail = prompt("Enter new email", currentUser.email);
+        if (!res.ok) throw new Error("Failed to load user");
 
-    const res = await fetch(endpoint, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name: newName, email: newEmail })
-    });
+        const user = await res.json();
 
-    if (res.ok) {
-        const updatedUser = await res.json();
-        alert("Profile updated successfully!");
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-        renderUserInfo(updatedUser);
-    } else {
-        alert("Failed to update profile");
+        localStorage.setItem("user", JSON.stringify(user));
+        Object.assign(currentUser, user);
+
+        renderUserInfo(user);
+    } catch (err) {
+        console.error(err);
+        logout(); // token invalid → force logout
     }
 }
+
+
+// ------------------ Profile Actions ------------------
+function updateProfile() {
+    // Prefill modal inputs with current user info
+    document.getElementById("modalName").value = currentUser.name || "";
+    document.getElementById("modalEmail").value = currentUser.email || "";
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('updateProfileModal'));
+    modal.show();
+}
+
+// ------------------ Modal Form Submission ------------------
+document.getElementById("updateProfileForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const newName = document.getElementById("modalName").value.trim();
+    const newEmail = document.getElementById("modalEmail").value.trim();
+
+    try {
+        const res = await fetch(`${API_BASE}/users/update`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: newName,
+                email: newEmail
+            })
+        });
+
+        if (!res.ok) throw new Error("Failed to update profile");
+
+        const updatedUser = await res.json();
+
+        // Update localStorage + in-memory user
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        Object.assign(currentUser, updatedUser);
+
+        renderUserInfo(updatedUser);
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(
+            document.getElementById("updateProfileModal")
+        );
+        modal.hide();
+
+        alert("Profile updated successfully!");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to update profile");
+    }
+});
+
 
 async function deleteAccount() {
     if (!confirm("Are you sure you want to delete your account?")) return;
 
-    const endpoint = `${API_BASE}/users/${currentUser.id}`;
+    const endpoint = `${API_BASE}/users/me`;
 
     const res = await fetch(endpoint, {
         method: "DELETE",
@@ -86,7 +139,40 @@ async function fetchConversations() {
     }
 }
 
-// Render conversations grouped by session
+// ------------------ All Conversations Toggle ------------------
+let allConversationsVisible = false;
+
+// Toggle function
+async function toggleAllConversations() {
+    const container = document.getElementById("conversationsContainer");
+
+    if (allConversationsVisible) {
+        // Hide conversations
+        container.style.display = "none";
+        allConversationsVisible = false;
+        document.getElementById("allConversationsBtn").textContent = "All Conversations";
+    } else {
+        // Show conversations
+        try {
+            const res = await fetch(`${API_BASE}/conversations/`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch conversations");
+            const data = await res.json();
+
+            renderConversations(data); // renders collapsible sessions
+            container.style.display = "block";
+            allConversationsVisible = true;
+            document.getElementById("allConversationsBtn").textContent = "Hide Conversations";
+        } catch (err) {
+            console.error(err);
+            alert("Error loading conversations");
+        }
+    }
+}
+
+// ------------------ Render Conversations (collapsible) ------------------
 function renderConversations(data) {
     const container = document.getElementById("conversationsContainer");
     container.innerHTML = ""; // clear previous
@@ -95,22 +181,37 @@ function renderConversations(data) {
         const sessionDiv = document.createElement("div");
         sessionDiv.classList.add("session", "mb-3", "p-2", "border", "rounded");
 
+        // Session header
         const sessionHeader = document.createElement("h5");
         sessionHeader.textContent = `Session: ${sessionId}`;
+        sessionHeader.style.cursor = "pointer"; // clickable
         sessionDiv.appendChild(sessionHeader);
 
+        // Messages container
+        const messagesDiv = document.createElement("div");
         const messages = data[sessionId];
         messages.forEach(msg => {
             const msgDiv = document.createElement("div");
             msgDiv.classList.add("message", msg.sender_type === "user" ? "user" : "chatbot", "mb-1");
             msgDiv.textContent = msg.content;
             msgDiv.setAttribute("data-time", new Date(msg.timestamp).toLocaleTimeString());
-            sessionDiv.appendChild(msgDiv);
+            messagesDiv.appendChild(msgDiv);
+        });
+        sessionDiv.appendChild(messagesDiv);
+
+        // Collapse toggle for each session
+        let collapsed = false;
+        sessionHeader.addEventListener("click", () => {
+            collapsed = !collapsed;
+            messagesDiv.style.display = collapsed ? "none" : "block";
         });
 
         container.appendChild(sessionDiv);
     }
 }
+
+
+
 
 // ------------------ Chat Bubble Functionality ------------------
 const chatBubble = document.getElementById("chatBubble");
@@ -277,6 +378,7 @@ async function generateApiKey() {
         alert("Select a chatbot first.");
         return;
     }
+
     try {
         const res = await fetch(`${API_BASE}/api-keys/`, {
             method: "POST",
@@ -285,7 +387,6 @@ async function generateApiKey() {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                user_id: currentUser.id,
                 chatbot_id: selectedChatbotId,
                 key: crypto.randomUUID(),
                 status: "active"
@@ -300,6 +401,7 @@ async function generateApiKey() {
 
         const data = await res.json();
         userApiKey = data.key;
+
         alert(`API key generated: ${userApiKey}`);
     } catch (err) {
         console.error(err);
@@ -307,22 +409,22 @@ async function generateApiKey() {
     }
 }
 
+
 // ------------------ DOMContentLoaded ------------------
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    
+    await ensureCurrentUser();
+
+    renderUserInfo(currentUser);
+
     // Profile buttons
     document.getElementById("updateProfileBtn").addEventListener("click", updateProfile);
     document.getElementById("logoutBtn").addEventListener("click", logout);
     document.getElementById("deleteAccountBtn").addEventListener("click", deleteAccount);
-
-    // Bind "Generate API Key" button from HTML
     document.getElementById("generateApiKeyBtn").addEventListener("click", generateApiKey);
-
-    // Render user info
-    renderUserInfo(currentUser);
-
-    // Bind "All Conversations" button
     document.getElementById("allConversationsBtn").addEventListener("click", fetchConversations);
 
-    // Load vendor-specific chatbots
     loadChatbots();
+
+    document.getElementById("allConversationsBtn").addEventListener("click", toggleAllConversations);
 });

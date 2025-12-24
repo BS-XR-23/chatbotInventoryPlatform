@@ -13,6 +13,28 @@
             border-radius: 5px;
         }
 
+        .top-bar {
+            background-color: #343a40;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            border-top: 4px solid #0d6efd; /* added top border */
+        }
+
+        .top-bar-offset {
+            margin-top: 70px; /* same height as your top-bar */
+        }
+
         /* Chat widget */
         #chatBubble {
             position: fixed;
@@ -155,23 +177,54 @@
 </head>
 <body class="container mt-4">
 
-<!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Users</h3>
-
-    <!-- Profile Dropdown -->
-    <div class="dropdown">
-        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            Profile
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-            <li><button class="dropdown-item" id="updateProfileBtn">Update Profile</button></li>
-            <li><button class="dropdown-item" id="logoutBtn">Logout</button></li>
-            <li><button class="dropdown-item text-danger" id="deleteAccountBtn">Delete Account</button></li>
-            <li><button class="dropdown-item" id="generateApiKeyBtn">Generate API Key</button></li>
-        </ul>
+<!-- Update Profile Modal -->
+<div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="updateProfileForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateProfileLabel">Update Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="modalName" class="form-label">Name</label>
+            <input type="text" class="form-control" id="modalName" required>
+          </div>
+          <div class="mb-3">
+            <label for="modalEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="modalEmail" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Profile</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
+
+
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <h3>Users</h3>
+
+  <!-- Profile Dropdown -->
+  <div class="dropdown">
+    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+      Profile
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li><button class="dropdown-item" id="updateProfileBtn">Update Profile</button></li>
+      <li><button class="dropdown-item" id="logoutBtn">Logout</button></li>
+      <li><button class="dropdown-item text-danger" id="deleteAccountBtn">Delete Account</button></li>
+      <li><button class="dropdown-item" id="generateApiKeyBtn">Generate API Key</button></li>
+    </ul>
+  </div>
+</div>
+
 
 <!-- User Info -->
 <div class="mb-3">
@@ -179,20 +232,20 @@
     <strong>Email:</strong> <span id="userEmail"></span>
 </div>
 
-<!-- Chatbot List -->
-<div class="mb-3">
-    <h5>Select Chatbot</h5>
-    <ul id="chatbotList" class="list-group"></ul>
-</div>
+<div class="top-bar-offset">
+    <!-- Chatbot List -->
+    <div class="mb-3">
+        <h5>Select Chatbot</h5>
+        <ul id="chatbotList" class="list-group"></ul>
+    </div>
 
-<!-- Conversations Control -->
-<div class="mb-3">
-    <button class="btn btn-primary" id="allConversationsBtn">All Conversations</button>
-</div>
+    <!-- All Conversations button -->
+    <div class="mb-3">
+        <button class="btn btn-primary" id="allConversationsBtn">All Conversations</button>
+    </div>
 
-<!-- Conversations Container -->
-<div id="conversationsContainer">
-    <!-- Messages grouped by session will be rendered here -->
+    <!-- Conversations Container -->
+    <div id="conversationsContainer"></div>
 </div>
 
 <!-- Chat Bubble -->

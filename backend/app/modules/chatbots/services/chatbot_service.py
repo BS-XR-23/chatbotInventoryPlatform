@@ -5,8 +5,7 @@ from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
 from typing import List, Optional
 from uuid import uuid4
-from core.enums import SenderType, ChatbotMode
-from core.enums import VectorStoreType, DocumentStatus
+from core.enums import SenderType, ChatbotMode, VectorStoreType, DocumentStatus, UserRole
 from modules.api_keys.models.api_model import APIKey
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
@@ -68,6 +67,18 @@ def create_chatbot_with_documents(
 
 def get_chatbots(db: Session) -> List[Chatbot]:
     return db.query(Chatbot).all()
+
+def get_role_based_stats(db: Session, chatbot_id: int):
+    chatbot = db.query(Chatbot).filter(
+        Chatbot.id == chatbot_id,
+        Chatbot.is_active == True
+    ).first()
+
+    if not chatbot:
+        return None
+    else :
+        return chatbot
+    
 
 def count_of_chatbots(db : Session) -> int:
     return db.query(func.count(Chatbot.id)).scalar()

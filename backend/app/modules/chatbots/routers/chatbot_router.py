@@ -9,7 +9,7 @@ from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
 from modules.admins.models.admin_model import Admin
 from modules.users.models.user_model import User
-from core.enums import ChatbotMode, VectorStoreType
+from core.enums import ChatbotMode, VectorStoreType, UserRole
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.admins.auth_admin import get_current_admin
 from modules.auth.users.auth_user import get_current_user
@@ -64,6 +64,28 @@ def get_vendor_chatbots(db: Session = Depends(get_db),  current_vendor: Vendor =
 @router.get("/", response_model=List[ChatbotRead])
 def get_chatbots(db: Session = Depends(get_db)):
     return chatbot_service.get_chatbots(db)
+
+@router.get("/role-based-stats/{chatbot_id}/{user_role}",)
+def role_based_chats(chatbot_id: int, user_role: UserRole, db: Session = Depends(get_db)):
+    chatbot = chatbot_service.get_role_based_stats(db, chatbot_id)
+    
+    if user_role == UserRole.admin:
+        return chatbot
+    elif user_role == UserRole.vendor:
+        return {
+            "id": chatbot.id,
+            "name": chatbot.name,
+            "created_at": chatbot.created_at,
+            "status": chatbot.status,
+            "description": chatbot.description,
+            "system_prompt": chatbot.system_prompt,
+        }
+
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+    return chatbot
+
+
 
 @router.get("/{chatbot_id}", response_model=ChatbotRead)
 def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):

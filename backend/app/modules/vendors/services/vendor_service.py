@@ -62,6 +62,7 @@ def list_vendors_with_stats(db: Session) -> List[VendorWithStats]:
         result.append(VendorWithStats(
             id=v.id,
             name=v.name,
+            status=v.status,
             user_count=user_count,
             chatbot_count=chatbot_count
         ))

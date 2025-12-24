@@ -43,11 +43,21 @@ async function login() {
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("role", role.value);
 
+    // ------------------ NEW: Save user info for user login ------------------
+    if (role.value === "user" && data.user) {
+        localStorage.setItem("user", JSON.stringify({
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email
+        }));
+    }
+    // ------------------ END CHANGE ------------------
+
     // If vendor, store vendor info for dashboard
     if (role.value === "vendor" && data.vendor) {
       localStorage.setItem("vendor", JSON.stringify({
-        id: data.vendor.id,
-        name: data.vendor.name
+          id: data.vendor.id,
+          name: data.vendor.name
       }));
     }
 
@@ -58,6 +68,7 @@ async function login() {
     alert("Login failed. Please check your credentials.");
   }
 }
+
 </script>
 </body>
 </html>
