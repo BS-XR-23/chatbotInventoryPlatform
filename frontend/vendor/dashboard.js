@@ -26,12 +26,13 @@ function logout() {
   window.location.href = "/index.html";
 }
 
-// ------------------ Profile ------------------
 function showProfileForm() {
   showSection("profile");
   vendorName.value = currentVendor.name || "";
   vendorEmail.value = currentVendor.email || "";
+  vendorDomain.value = currentVendor.domain || "";  // added domain
 }
+
 
 async function saveProfile() {
   await fetch(`${API_BASE}/vendors/update/${currentVendor.id}`, {
@@ -42,11 +43,59 @@ async function saveProfile() {
     },
     body: JSON.stringify({
       name: vendorName.value,
-      email: vendorEmail.value
+      email: vendorEmail.value,
+      domain: vendorDomain.value   // added domain
     })
   });
   alert("Profile updated");
 }
+
+
+// Show the modal
+function showChangePasswordModal() {
+  const modalEl = document.getElementById('changePasswordModal');
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+// Submit password change
+async function submitChangePassword() {
+  const current = currentPassword.value;
+  const newPass = newPassword.value;
+  const confirm = confirmNewPassword.value;
+
+  if (!current || !newPass || !confirm) return alert("Please fill all fields");
+
+  if (newPass !== confirm) return alert("New password and confirmation do not match");
+
+  try {
+    const res = await fetch(`${API_BASE}/vendors/change-password`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ current_password: current, new_password: newPass })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return alert(data.detail || "Failed to change password");
+    }
+
+    alert(data.message);
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+    // Logout after password change
+    logout();
+
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+}
+
+
 
 // ------------------ LLM Map ------------------
 async function loadLLMsMap() {
@@ -103,13 +152,38 @@ async function loadDocuments() {
   const docs = await docRes.json();
 
   docs.forEach(d => {
+    // Map enum to badge
+    let statusBadge = '';
+    switch(d.status) {
+      case 'processing':
+        statusBadge = '<span class="badge bg-warning text-dark">Processing</span>';
+        break;
+      case 'embedded':
+        statusBadge = '<span class="badge bg-success">Embedded</span>';
+        break;
+      case 'processing_failed':
+        statusBadge = '<span class="badge bg-danger">Failed</span>';
+        break;
+      default:
+        statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+    }
+
     documentList.innerHTML += `
-      <li class="list-group-item d-flex justify-content-between">
-        ${d.title}
-        <button class="btn btn-sm btn-danger" onclick="deleteDocument(${d.id}, this)">Delete</button>
+      <li class="list-group-item d-flex justify-content-between align-items-start">
+        <!-- Left: Title -->
+        <div>${d.title}</div>
+
+        <!-- Right: Status + Delete vertically -->
+        <div class="d-flex flex-column align-items-end">
+          <span class="mb-1">${statusBadge}</span>
+          <button class="btn btn-sm btn-danger" onclick="deleteDocument(${d.id}, this)">Delete</button>
+        </div>
       </li>`;
   });
 }
+
+
+
 
 // -------- MULTI-FILE FIX --------
 function handleDocumentFileSelect(e) {
@@ -128,10 +202,26 @@ function handleDocumentFileSelect(e) {
 
 function renderSelectedFiles() {
   selectedFilesPreview.innerHTML = "";
-  selectedNewFiles.forEach(f => {
-    selectedFilesPreview.innerHTML += `<li>${f.name}</li>`;
+  
+  selectedNewFiles.forEach((f, index) => {
+    const li = document.createElement("li");
+    li.className = "d-flex justify-content-between align-items-center mb-1";
+
+    li.innerHTML = `
+      <span>${f.name}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger btn-close" aria-label="Remove"></button>
+    `;
+
+    // Remove file on button click
+    li.querySelector("button").addEventListener("click", () => {
+      selectedNewFiles.splice(index, 1);
+      renderSelectedFiles();
+    });
+
+    selectedFilesPreview.appendChild(li);
   });
 }
+
 
 // ------------------ Upload ------------------
 async function uploadDocuments() {

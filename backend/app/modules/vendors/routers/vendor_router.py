@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from jose import jwt
+from core.config import settings 
 from db.database import get_db
-from modules.vendors.schemas.vendor_schema import VendorCreate, VendorRead, VendorUpdate
+from modules.vendors.schemas.vendor_schema import VendorCreate, VendorRead, VendorUpdate, ChangePasswordRequest
 from modules.vendors.services import vendor_service
 from modules.vendors.models.vendor_model import Vendor
 from modules.auth.vendors import auth_vendor
@@ -19,6 +21,24 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_a
     if not new_vendor:
         raise HTTPException(status_code=400, detail="Email already registered")
     return new_vendor
+
+@router.put("/change-password")
+def update_vendor_password(
+    body: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_vendor=Depends(auth_vendor.get_current_vendor)
+):
+    updated_vendor, error = vendor_service.change_vendor_password(
+        db,
+        vendor_id=current_vendor.id,
+        current_password=body.current_password,
+        new_password=body.new_password
+    )
+
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    return {"message": "Password updated successfully"}
 
 @router.get("/all-vendors", response_model=List[VendorRead])
 def list_vendors(db: Session = Depends(get_db)):
