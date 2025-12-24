@@ -15,10 +15,6 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
-    vendor_id: Optional[int] = None
 
 class UserRead(UserBase):
     id: int

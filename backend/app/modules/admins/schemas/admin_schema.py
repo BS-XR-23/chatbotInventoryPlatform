@@ -1,9 +1,11 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional
+from core.enums import  UserRole
 
 class AdminBase(BaseModel):
     email: EmailStr
     name: str
+    role: UserRole = UserRole.admin
 
 class AdminCreate(AdminBase):
     password: str  

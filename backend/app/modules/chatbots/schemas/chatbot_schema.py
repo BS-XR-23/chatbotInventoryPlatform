@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
+from datetime import datetime
 from core.enums import ChatbotMode, VectorStoreType
 
 class ChatbotBase(BaseModel):
@@ -31,5 +32,6 @@ class ChatbotUpdate(BaseModel):
 
 class ChatbotRead(ChatbotBase):
     id: int
+    created_at: datetime 
 
     model_config = ConfigDict(from_attributes=True)

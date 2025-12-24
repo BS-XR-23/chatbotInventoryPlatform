@@ -18,15 +18,24 @@ let selectedChatbotFiles = [];
 
 /* ===================== NAV ===================== */
 function showSection(id) {
+  // Hide all sections
   document.querySelectorAll(".section").forEach(s => s.classList.add("d-none"));
+  
+  // Show the selected section
   document.getElementById(id).classList.remove("d-none");
 
+  // Load data or perform actions based on section
   if (id === "chatbots") loadChatbots();
-  if (id === "vendors") loadVendors();
-  if (id === "documents") loadDocuments();
-  if (id === "embeddings") loadEmbeddings();
-  if (id === "llms") loadLLMs();
+  else if (id === "vendors") loadVendors();
+  else if (id === "documents") loadDocuments();
+  else if (id === "embeddings") loadEmbeddings();
+  else if (id === "llms") loadLLMs();
+  else if (id === "chatbotDetails") {
+    // Details section is already rendered by showChatbotDetails()
+    // No extra loading needed here
+  }
 }
+
 
 /* ===================== DASHBOARD STATS ===================== */
 async function loadDashboardStats() {
@@ -84,6 +93,48 @@ async function deleteChatbot(chatbotId) {
   loadChatbots(); // refresh list after deletion
 }
 
+async function showChatbotDetails(chatbotId) {
+  try {
+    const role = JSON.parse(localStorage.getItem("user"))?.role; // current user role
+    if (!role) {
+      alert("User role not found. Please log in again.");
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/role-based-stats/${chatbotId}/${role}`, {
+      headers
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to fetch chatbot details");
+    }
+
+    const data = await res.json();
+
+    // Render details page
+    const container = document.getElementById("chatbotDetailsContainer");
+    container.innerHTML = `
+      <div class="card shadow-sm p-3 mb-3">
+        <h3 class="card-title">${data.name}</h3>
+        <p><strong>Description:</strong> ${data.description || "N/A"}</p>
+        <p><strong>System Prompt:</strong> <pre class="text-muted">${data.system_prompt || "N/A"}</pre></p>
+        <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
+        <p><strong>Status:</strong> <span class="badge bg-${data.status === 'active' ? 'success' : 'secondary'}">${data.status || "N/A"}</span></p>
+        <p><strong>Mode:</strong> ${data.mode || "N/A"}</p>
+        <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
+        <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">Back</button>
+      </div>
+    `;
+
+    showSection("chatbotDetails"); // show details section
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load chatbot details.");
+  }
+}
+
+
 /* ===================== CHATBOTS ===================== */
 async function loadChatbots() {
   const res = await fetch(`${API_BASE}/admins/`, { headers });
@@ -134,24 +185,32 @@ async function loadChatbots() {
 
     // Duplicate button
     const dupBtn = document.createElement("button");
-    dupBtn.className = "btn btn-sm btn-outline-primary";
+    dupBtn.className = "btn btn-sm btn-primary";
     dupBtn.textContent = "Duplicate";
     dupBtn.addEventListener("click", () => duplicateChatbot(bot.id));
     tdActions.appendChild(dupBtn);
 
     // Edit button
     const editBtn = document.createElement("button");
-    editBtn.className = "btn btn-sm btn-outline-warning";
+    editBtn.className = "btn btn-sm btn-warning";
     editBtn.textContent = "Edit";
     editBtn.addEventListener("click", () => openUpdateChatbotModal(bot));
     tdActions.appendChild(editBtn);
 
     // Delete button
     const delBtn = document.createElement("button");
-    delBtn.className = "btn btn-sm btn-outline-danger";
+    delBtn.className = "btn btn-sm btn-danger";
     delBtn.textContent = "Delete";
     delBtn.addEventListener("click", () => deleteChatbot(bot.id));
     tdActions.appendChild(delBtn);
+
+    // Details button
+    const detailsBtn = document.createElement("button");
+    detailsBtn.className = "btn btn-sm btn-info";
+    detailsBtn.textContent = "Details";
+    detailsBtn.addEventListener("click", () => showChatbotDetails(bot.id));
+    tdActions.appendChild(detailsBtn);
+
 
     tr.appendChild(tdActions);
     tbody.appendChild(tr);
@@ -389,7 +448,7 @@ async function loadVendors() {
           </div>
         </div>
         <div class="d-flex flex-column align-items-end gap-2">
-          <span class="badge bg-secondary">${v.status}</span>
+          <span class="badge bg-secondary">${v.status || 'N/A'}</span>
           <button class="btn btn-sm btn-outline-warning"
             onclick="updateVendorStatus(${v.id})">
             Update Status
@@ -417,36 +476,37 @@ async function loadVendors() {
     loadTotalTokensAnalytics();
   }
 
-  // Most users vendor
-  const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
-  let usersData = await usersRes.json();
-  if (Array.isArray(usersData)) usersData = usersData[0];
+  // // Most users vendor
+  // const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
+  // let usersData = await usersRes.json();
+  // if (Array.isArray(usersData)) usersData = usersData[0];
 
-  if (usersData?.vendor) {
-    mostUsersVendor.innerHTML = `
-      <strong>Vendor with Most Users</strong><br>
-      Vendor: ${usersData.vendor.name}<br>
-      Users: ${usersData.user_count}
-    `;
-  } else {
-    mostUsersVendor.innerText = "No data available";
-  }
+  // if (usersData?.vendor) {
+  //   mostUsersVendor.innerHTML = `
+  //     <strong>Vendor with Most Users</strong><br>
+  //     Vendor: ${usersData.vendor.name}<br>
+  //     Users: ${usersData.user_count}
+  //   `;
+  // } else {
+  //   mostUsersVendor.innerText = "No data available";
+  // }
 
-  // Most chatbots vendor
-  const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
-  let botsData = await botsRes.json();
-  if (Array.isArray(botsData)) botsData = botsData[0];
+  // // Most chatbots vendor
+  // const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
+  // let botsData = await botsRes.json();
+  // if (Array.isArray(botsData)) botsData = botsData[0];
 
-  if (botsData?.vendor) {
-    mostChatbotsVendor.innerHTML = `
-      <strong>Vendor with Most Chatbots</strong><br>
-      Vendor: ${botsData.vendor.name}<br>
-      Chatbots: ${botsData.chatbot_count}
-    `;
-  } else {
-    mostChatbotsVendor.innerText = "No data available";
-  }
+  // if (botsData?.vendor) {
+  //   mostChatbotsVendor.innerHTML = `
+  //     <strong>Vendor with Most Chatbots</strong><br>
+  //     Vendor: ${botsData.vendor.name}<br>
+  //     Chatbots: ${botsData.chatbot_count}
+  //   `;
+  // } else {
+  //   mostChatbotsVendor.innerText = "No data available";
+  // }
 }
+
 
 
 async function loadTotalTokensAnalytics() {
@@ -456,10 +516,14 @@ async function loadTotalTokensAnalytics() {
   const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
   const data = await res.json();
 
+  const totalTokens = data?.total_tokens;
+  const displayText = (totalTokens && totalTokens > 0) ? totalTokens : "No token used";
+
   document.getElementById("totalTokensAnalytics").innerHTML = `
-    <strong>Total Tokens Used:</strong> ${data.total_tokens}
+    <strong>Total Tokens Used:</strong> ${displayText}
   `;
 }
+
 
 
 

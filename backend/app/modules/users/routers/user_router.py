@@ -28,17 +28,11 @@ def get_vendor_chatbots(
     vendor_id = current_user.vendor_id
     return user_service.get_vendor_chatbots(db, vendor_id)
 
-
-@router.get("/{user_id}", response_model=UserRead)
-def get_user(
-    user_id: int,
-    db: Session = Depends(get_db),
+@router.get("/me", response_model=UserRead)
+def get_current_user_info(
     current_user: User = Depends(auth_user.get_current_user)
 ):
-    user = user_service.get_user(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return current_user
 
 @router.get("/", response_model=List[UserRead])
 def get_users(
@@ -48,25 +42,23 @@ def get_users(
     return user_service.get_users_by_vendor(db, current_vendor.id)
     
 
-@router.put("/update/{user_id}", response_model=UserRead)
+@router.put("/update", response_model=UserRead)
 def update_user(
-    user_id: int,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_user.get_current_user)
 ):
-    updated_user = user_service.update_user(db, user_id, user_data)
+    updated_user = user_service.update_user(db, current_user.id, user_data)
     if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
     return updated_user
 
-@router.delete("/{user_id}")
+@router.delete("/me")
 def delete_user(
-    user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(auth_user.get_current_user)
 ):
-    success = user_service.delete_user(db, user_id)
+    success = user_service.delete_user(db, current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return {"detail": "User deleted successfully"}
