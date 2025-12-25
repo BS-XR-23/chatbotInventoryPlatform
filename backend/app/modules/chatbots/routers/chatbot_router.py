@@ -94,6 +94,21 @@ def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Chatbot not found")
     return chatbot
 
+@router.get("/role-based-stats/{chatbot_id}/{user_role}")
+def role_based_stats(chatbot_id: int, user_role: UserRole, db: Session = Depends(get_db), curent_user: Admin = Depends(get_current_admin)):
+    chatbot = chatbot_service.get_role_based_stats(db, chatbot_id)
+    if user_role == UserRole.admin:
+        return chatbot
+    elif user_role == UserRole.vendor:
+        return {
+            "id": chatbot.id,
+            "name": chatbot.name,
+            "created_at": chatbot.created_at,
+            "status": chatbot.status,
+            "description": chatbot.description,
+            "system_prompt": chatbot.system_prompt,
+        }
+
 @router.put("/{chatbot_id}", response_model=ChatbotRead)
 async def update_chatbot_endpoint(
     chatbot_id: int,

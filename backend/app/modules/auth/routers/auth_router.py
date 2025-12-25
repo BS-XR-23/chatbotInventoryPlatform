@@ -37,7 +37,7 @@ def login_admin_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth_admin.create_access_token(data={"sub": admin.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": admin.role}
 
 
 @router.post("/vendor/{vendor_domain}/token", name="Vendor Login")
