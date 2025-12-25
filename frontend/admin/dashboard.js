@@ -1,8 +1,9 @@
 const API_BASE = "http://127.0.0.1:9000";
 const token = localStorage.getItem("access_token");
+const role = localStorage.getItem("role");
 
 if (!token) {
-  window.location.href = "/login.html";
+  window.location.href = "/index.html";
 }
 
 const headers = {
@@ -19,22 +20,35 @@ let selectedChatbotFiles = [];
 /* ===================== NAV ===================== */
 function showSection(id) {
   // Hide all sections
-  document.querySelectorAll(".section").forEach(s => s.classList.add("d-none"));
-  
+  document.querySelectorAll(".section").forEach(s =>
+    s.classList.add("d-none")
+  );
+
   // Show the selected section
   document.getElementById(id).classList.remove("d-none");
 
-  // Load data or perform actions based on section
+  // CHAT VISIBILITY CONTROL
+  if (id === "chatbotDetails" && activeChatbotId) {
+    // Show chat bubble only if a chatbot is active
+    document.getElementById("chatBubbleButton").classList.remove("hidden");
+    document.getElementById("chatWindow").classList.add("hidden");
+  } else {
+    // Hide chat everywhere else
+    document.getElementById("chatBubbleButton").classList.add("hidden");
+    document.getElementById("chatWindow").classList.add("hidden");
+    activeChatbotId = null;
+  }
+
+  // EXISTING LOGIC
   if (id === "chatbots") loadChatbots();
   else if (id === "vendors") loadVendors();
   else if (id === "documents") loadDocuments();
   else if (id === "embeddings") loadEmbeddings();
   else if (id === "llms") loadLLMs();
-  else if (id === "chatbotDetails") {
-    // Details section is already rendered by showChatbotDetails()
-    // No extra loading needed here
-  }
 }
+
+
+
 
 
 /* ===================== DASHBOARD STATS ===================== */
@@ -93,17 +107,18 @@ async function deleteChatbot(chatbotId) {
   loadChatbots(); // refresh list after deletion
 }
 
+let activeChatbotId = null;
+// Hide chat bubble globally on page load
+document.getElementById("chatBubbleButton").classList.add("hidden");
+document.getElementById("chatWindow").classList.add("hidden");
+
+
 async function showChatbotDetails(chatbotId) {
   try {
-    const role = JSON.parse(localStorage.getItem("user"))?.role; // current user role
-    if (!role) {
-      alert("User role not found. Please log in again.");
-      return;
-    }
-
-    const res = await fetch(`${API_BASE}/role-based-stats/${chatbotId}/${role}`, {
-      headers
-    });
+    const res = await fetch(
+      `${API_BASE}/chatbots/role-based-stats/${chatbotId}/${role}`,
+      { headers }
+    );
 
     if (!res.ok) {
       const err = await res.json();
@@ -112,27 +127,101 @@ async function showChatbotDetails(chatbotId) {
 
     const data = await res.json();
 
-    // Render details page
+    // Set active chatbot ID
+    activeChatbotId = chatbotId;
+    document.getElementById("chatbotTitle").innerText = data.name;
+
     const container = document.getElementById("chatbotDetailsContainer");
     container.innerHTML = `
       <div class="card shadow-sm p-3 mb-3">
         <h3 class="card-title">${data.name}</h3>
         <p><strong>Description:</strong> ${data.description || "N/A"}</p>
-        <p><strong>System Prompt:</strong> <pre class="text-muted">${data.system_prompt || "N/A"}</pre></p>
-        <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
-        <p><strong>Status:</strong> <span class="badge bg-${data.status === 'active' ? 'success' : 'secondary'}">${data.status || "N/A"}</span></p>
+        <p><strong>System Prompt:</strong>
+          <pre class="text-muted">${data.system_prompt || "N/A"}</pre>
+        </p>
+        <p><strong>Created At:</strong>
+          ${new Date(data.created_at).toLocaleString()}
+        </p>
+        <p><strong>Status:</strong>
+          <span class="badge bg-${data.status === "active" ? "success" : "secondary"}">
+            ${data.status || "N/A"}
+          </span>
+        </p>
         <p><strong>Mode:</strong> ${data.mode || "N/A"}</p>
         <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
-        <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">Back</button>
+
+        <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">
+          Back
+        </button>
       </div>
     `;
 
-    showSection("chatbotDetails"); // show details section
+    showSection("chatbotDetails"); // will also handle bubble visibility
   } catch (err) {
     console.error(err);
     alert("Failed to load chatbot details.");
   }
 }
+
+function openChat() {
+  if (!activeChatbotId) return;
+  document.getElementById("chatWindow").classList.remove("hidden");
+}
+
+function closeChatWindow() {
+  document.getElementById("chatWindow").classList.add("hidden");
+}
+
+
+function handleEnter(event) {
+  if (event.key === "Enter") {
+    sendMessage();
+  }
+}
+async function sendMessage() {
+  const input = document.getElementById("chatInput");
+  const message = input.value.trim();
+
+  if (!message || !activeChatbotId) return;
+
+  appendMessage(message, "user");
+  input.value = "";
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/chatbots/${activeChatbotId}/ask`,
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question: message }),
+      }
+    );
+
+    if (!res.ok) throw new Error("Chat failed");
+
+    const data = await res.json();
+    appendMessage(data.answer || "No response", "bot");
+  } catch (err) {
+    console.error(err);
+    appendMessage("Failed to get response.", "bot");
+  }
+}
+
+function appendMessage(text, sender) {
+  const container = document.getElementById("chatMessages");
+  const div = document.createElement("div");
+
+  div.className = `message ${sender}`;
+  div.innerText = text;
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+
 
 
 /* ===================== CHATBOTS ===================== */

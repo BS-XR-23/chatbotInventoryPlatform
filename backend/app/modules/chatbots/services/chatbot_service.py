@@ -192,9 +192,9 @@ def handle_conversation_singleturn(
         temperature=0.7,
     )
 
-    vector_db_obj = chatbot_service.get_latest_vector_db()
-    if not vector_db_obj:
-        raise HTTPException(status_code=404, detail="No active VectorDB found for this chatbot")
+    vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
+    # if not vector_db_obj:
+    #     raise HTTPException(status_code=404, detail="No active VectorDB found for this chatbot")
 
     embedd_obj = db.query(Embedding).filter(
         Embedding.id == llm_obj.embedding_id
@@ -205,13 +205,14 @@ def handle_conversation_singleturn(
 
     embeddings = OllamaEmbeddings(model=embedd_obj.model_name)
 
-    vectordb = rag_service.load_vectorstore(
-        vector_db_obj.db_path,
-        embeddings
-    )
-
-    context, _ = rag_service.get_rag_context(question, vectordb)
-
+    if vector_db_obj:
+        vectordb = rag_service.load_vectorstore(
+            vector_db_obj.db_path,
+            embeddings
+        )
+        context, _ = rag_service.get_rag_context(question, vectordb)
+    else:
+        context = None
     system_msg = SystemMessage(
         content=chatbot.system_prompt or "You are a helpful assistant."
     )
