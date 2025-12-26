@@ -19,14 +19,14 @@ class VendorStatus(str, enum.Enum):
     active = "active"
     inactive = "inactive"
 
+class ChatbotStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"    
+
 class DocumentStatus(str, enum.Enum):
     processing = "processing"
     embedded = "embedded"
     processing_failed = "processing_failed"
-
-class ChatbotMode(str, enum.Enum):
-    private = "private"
-    public = "public"
 
 class APIKeyStatus(str, enum.Enum):
     active = "active"
@@ -51,7 +51,4 @@ class EmbeddingProvider(str, enum.Enum):
 
 class VectorStoreType(str, enum.Enum):
     chroma = "chroma"
-    qdrant = "qdrant"
-    pinecone = "pinecone"
-    weaviate = "weaviate"
-    pgvector = "pgvector"
+    faiss = "faiss"

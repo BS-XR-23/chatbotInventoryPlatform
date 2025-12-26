@@ -89,7 +89,7 @@ def duplicate_chatbot(
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(auth_admin.get_current_admin)
 ):
-    duplicated_chatbot = admin_service.duplicate_chatbot(db, chatbot_id)
+    duplicated_chatbot = chatbot_service.duplicate_chatbot(db, chatbot_id)
 
     if not duplicated_chatbot:
         raise HTTPException(status_code=404, detail="Chatbot not found or cannot be duplicated")

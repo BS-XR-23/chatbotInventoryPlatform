@@ -71,17 +71,6 @@ def update_vendor_status(db: Session, vendor_id: int, vendor_data: VendorStatusU
     db.refresh(vendor)
     return vendor
 
-def duplicate_chatbot(db: Session, chatbot_id: int):
-    chatbot = db.query(Chatbot).get(chatbot_id)
-    if not chatbot:
-        return None
-    data = {c.name: getattr(chatbot, c.name) for c in Chatbot.__table__.columns if c.name != "id"}
-    new_chatbot = Chatbot(**data)
-    db.add(new_chatbot)
-    db.commit()
-    db.refresh(new_chatbot)
-    return new_chatbot
-
 # def toggle_chatbot_status(db: Session, chatbot_id: int):
 #     chatbot = db.query(Chatbot).get(chatbot_id)
 #     if not chatbot:

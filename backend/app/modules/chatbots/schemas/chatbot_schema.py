@@ -1,7 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Dict, Any
 from datetime import datetime
-from core.enums import ChatbotMode, VectorStoreType
+from core.enums import VectorStoreType
+from modules.vendors.schemas.vendor_schema import VendorRead
+from modules.llms.schemas.llm_schema import LLMRead
 
 class ChatbotBase(BaseModel):
     vendor_id: int
@@ -10,10 +12,8 @@ class ChatbotBase(BaseModel):
     system_prompt: Optional[str] = None
     llm_id: Optional[int] = None
     llm_path: Optional[str] = None  
-    mode: ChatbotMode = ChatbotMode.private
     is_active: bool = True
-    vector_store_type: VectorStoreType = VectorStoreType.chroma
-    vector_store_config: Optional[Dict[str, Any]] = None  
+    vector_store_type: VectorStoreType = VectorStoreType.chroma  
 
 class ChatbotCreate(ChatbotBase):
     pass
@@ -25,13 +25,26 @@ class ChatbotUpdate(BaseModel):
     system_prompt: Optional[str] = None
     llm_id: Optional[int] = None
     llm_path: Optional[str] = None
-    mode: Optional[ChatbotMode] = None
     is_active: Optional[bool] = None
     vector_store_type: Optional[VectorStoreType] = None
-    vector_store_config: Optional[Dict[str, Any]] = None
 
 class ChatbotRead(ChatbotBase):
     id: int
+    vendor: Optional[VendorRead]
+    llm: Optional[LLMRead]
     created_at: datetime 
 
     model_config = ConfigDict(from_attributes=True)
+
+class ChatbotVendorRead(BaseModel):
+    id: int
+    name: str
+    description: str
+    system_prompt: str
+    is_active: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+

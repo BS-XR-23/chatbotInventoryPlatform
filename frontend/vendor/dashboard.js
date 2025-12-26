@@ -1,18 +1,41 @@
 const API_BASE = "http://127.0.0.1:9000";
 const token = localStorage.getItem("access_token");
 const currentVendor = JSON.parse(localStorage.getItem("vendor") || "{}");
+const role = localStorage.getItem("role");
 
 // ================= GLOBAL FILE STATE =================
 let selectedNewFiles = [];
 let llmMap = {};
 
 // ------------------ Section Control ------------------
+// ------------------ Section Control ------------------
+// ------------------ Section Control ------------------
 function showSection(section) {
-  ["analyticsSection", "chatbotsSection", "documentsSection", "profileSection"]
-    .forEach(id => document.getElementById(id).classList.add("d-none"));
+  // Hide all sections including chatbot details
+  [
+    "analyticsSection", 
+    "chatbotsSection", 
+    "documentsSection", 
+    "profileSection",
+    "chatbotDetailsSection"
+  ].forEach(id => document.getElementById(id).classList.add("d-none"));
 
+  // Show the selected section
   document.getElementById(section + "Section").classList.remove("d-none");
+
+  // Handle chat bubble visibility
+  const chatBubble = document.getElementById("chatBubble");
+  const chatWindow = document.getElementById("chatWindow");
+
+  if (section === "chatbotDetails") {
+    if (chatBubble) chatBubble.style.display = "flex";  // show bubble
+  } else {
+    if (chatBubble) chatBubble.style.display = "none";  // hide bubble
+    if (chatWindow) chatWindow.style.display = "none";  // hide chat window
+  }
 }
+
+
 
 async function showMainDashboard() {
   showSection("analytics");
@@ -95,8 +118,6 @@ async function submitChangePassword() {
   }
 }
 
-
-
 // ------------------ LLM Map ------------------
 async function loadLLMsMap() {
   const res = await fetch(`${API_BASE}/llms/`, {
@@ -110,6 +131,7 @@ async function loadLLMsMap() {
 // ------------------ Chatbots ------------------
 async function loadChatbots() {
   showSection("chatbots");
+  const chatbotList = document.getElementById("chatbotList");
   chatbotList.innerHTML = "";
   await loadLLMsMap();
 
@@ -125,9 +147,87 @@ async function loadChatbots() {
         <td>${llmMap[b.llm_id] || "N/A"}</td>
         <td>${b.vector_store_type || "N/A"}</td>
         <td>${b.mode}</td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="showChatbotDetails(${b.id})">Details</button>
+        </td>
       </tr>`;
   });
 }
+
+// Show chatbot details
+async function showChatbotDetails(chatbotId) {
+  showSection("chatbotDetails");
+
+  const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/vendor`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
+
+  document.getElementById("detailsChatbotName").innerText = data.name;
+  document.getElementById("detailsChatbotStatus").innerText = data.is_active ? "Active" : "Inactive";
+  document.getElementById("detailsChatbotCreatedAt").innerText = new Date(data.created_at).toLocaleString();
+  document.getElementById("detailsChatbotDescription").innerText = data.description || "";
+  document.getElementById("detailsChatbotSystemPrompt").innerText = data.system_prompt || "";
+
+  // Chat bubble setup
+  const chatBubble = document.getElementById("chatBubble");
+  chatBubble.onclick = () => openChat(chatbotId, data.name);
+}
+
+// Open Chat
+function openChat(chatbotId, chatbotName) {
+  const chatWindow = document.getElementById("chatWindow");
+  chatWindow.style.display = "flex";
+
+  document.getElementById("chatHeaderName").innerText = chatbotName;
+  document.getElementById("chatMessages").innerHTML = "";
+  document.getElementById("chatInput").value = "";
+
+  window.currentChatbotId = chatbotId;
+}
+
+// Close Chat
+function closeChat() {
+  document.getElementById("chatWindow").style.display = "none";
+}
+
+// Send Message
+async function sendMessage() {
+  const input = document.getElementById("chatInput");
+  const message = input.value.trim();
+  if (!message) return;
+
+  const chatMessages = document.getElementById("chatMessages");
+  chatMessages.innerHTML += `<div class="chat-message user">${message}</div>`;
+  input.value = "";
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  try {
+    const res = await fetch(`${API_BASE}/chatbots/${window.currentChatbotId}/ask`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ question: message })
+    });
+
+    if (!res.ok) throw new Error("Failed to get response from chatbot");
+
+    const data = await res.json();
+
+    chatMessages.innerHTML += `<div class="chat-message bot">${data.answer}</div>`;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  } catch (err) {
+    chatMessages.innerHTML += `<div class="chat-message bot">Error: ${err.message}</div>`;
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+}
+
+
+
+
 
 // ------------------ Documents ------------------
 async function loadDocuments() {
