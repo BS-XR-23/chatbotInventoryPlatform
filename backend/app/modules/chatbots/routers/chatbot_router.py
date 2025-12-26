@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import uuid4
 from db.database import get_db
-from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotRead, ChatbotUpdate
+from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotRead, ChatbotUpdate, ChatbotVendorRead
 from modules.chatbots.services import chatbot_service
 from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
 from modules.admins.models.admin_model import Admin
 from modules.users.models.user_model import User
-from core.enums import ChatbotMode, VectorStoreType, UserRole
+from core.enums import VectorStoreType, UserRole
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.admins.auth_admin import get_current_admin
 from modules.auth.users.auth_user import get_current_user
@@ -25,22 +25,12 @@ def create_chatbot_endpoint(
     system_prompt: Optional[str] = Form(None),
     llm_id: int = Form(...),
     llm_path: str = Form(...),
-    mode: ChatbotMode = Form(ChatbotMode.private),
     vector_store_type: VectorStoreType = Form(VectorStoreType.chroma),  
-    vector_store_config: Optional[str] = Form(None), 
+    is_active: bool = Form(True), 
     files: List[UploadFile] = File([]),  
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin)
 ):
-
-    config_dict = None
-    if vector_store_config:
-        import json
-        try:
-            config_dict = json.loads(vector_store_config)
-        except json.JSONDecodeError:
-            raise ValueError("vector_store_config must be valid JSON")
-
     chatbot = chatbot_service.create_chatbot_with_documents(
         db=db,
         vendor_id=vendor_id,
@@ -49,9 +39,8 @@ def create_chatbot_endpoint(
         system_prompt=system_prompt or "",
         llm_id=llm_id,
         llm_path=llm_path,
-        mode=mode,
         vector_store_type=vector_store_type,
-        vector_store_config=config_dict,
+        is_active=is_active,
         files=files
     )
     return chatbot
@@ -65,28 +54,6 @@ def get_vendor_chatbots(db: Session = Depends(get_db),  current_vendor: Vendor =
 def get_chatbots(db: Session = Depends(get_db)):
     return chatbot_service.get_chatbots(db)
 
-@router.get("/role-based-stats/{chatbot_id}/{user_role}",)
-def role_based_chats(chatbot_id: int, user_role: UserRole, db: Session = Depends(get_db)):
-    chatbot = chatbot_service.get_role_based_stats(db, chatbot_id)
-    
-    if user_role == UserRole.admin:
-        return chatbot
-    elif user_role == UserRole.vendor:
-        return {
-            "id": chatbot.id,
-            "name": chatbot.name,
-            "created_at": chatbot.created_at,
-            "status": chatbot.status,
-            "description": chatbot.description,
-            "system_prompt": chatbot.system_prompt,
-        }
-
-    if not chatbot:
-        raise HTTPException(status_code=404, detail="Chatbot not found")
-    return chatbot
-
-
-
 @router.get("/{chatbot_id}", response_model=ChatbotRead)
 def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
     chatbot = chatbot_service.get_chatbot(db, chatbot_id)
@@ -95,19 +62,18 @@ def get_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
     return chatbot
 
 @router.get("/role-based-stats/{chatbot_id}/{user_role}")
-def role_based_stats(chatbot_id: int, user_role: UserRole, db: Session = Depends(get_db), curent_user: Admin = Depends(get_current_admin)):
+def role_based_stats(chatbot_id: int, user_role: UserRole, db: Session = Depends(get_db)):
     chatbot = chatbot_service.get_role_based_stats(db, chatbot_id)
+
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+
     if user_role == UserRole.admin:
-        return chatbot
+        return ChatbotRead.from_orm(chatbot)
     elif user_role == UserRole.vendor:
-        return {
-            "id": chatbot.id,
-            "name": chatbot.name,
-            "created_at": chatbot.created_at,
-            "status": chatbot.status,
-            "description": chatbot.description,
-            "system_prompt": chatbot.system_prompt,
-        }
+        return ChatbotVendorRead.from_orm(chatbot)
+    else:
+        raise HTTPException(status_code=403, detail="User role not allowed")
 
 @router.put("/{chatbot_id}", response_model=ChatbotRead)
 async def update_chatbot_endpoint(
@@ -118,21 +84,12 @@ async def update_chatbot_endpoint(
     system_prompt: Optional[str] = Form(None),
     llm_id: int = Form(...),
     llm_path: str = Form(...),
-    mode: ChatbotMode = Form(ChatbotMode.private),
     vector_store_type: VectorStoreType = Form(VectorStoreType.chroma),  
-    vector_store_config: Optional[str] = Form(None), 
-    files: List[UploadFile] = File([]),  # optional files
+    is_active: bool = Form(True), 
+    files: List[UploadFile] = File([]),  
     db: Session = Depends(get_db),
     current_admin: Admin = Depends(get_current_admin)
 ):
-    import json
-    config_dict = None
-    if vector_store_config:
-        try:
-            config_dict = json.loads(vector_store_config)
-        except json.JSONDecodeError:
-            raise ValueError("vector_store_config must be valid JSON")
-
     chatbot_data = ChatbotUpdate(
         name=name,
         vendor_id=vendor_id,
@@ -140,10 +97,8 @@ async def update_chatbot_endpoint(
         system_prompt=system_prompt or "",
         llm_id=llm_id,
         llm_path=llm_path,
-        mode=mode,
         vector_store_type=vector_store_type,
-        vector_store_config=config_dict,
-        is_active=True
+        is_active=is_active
     )
 
     chatbot = chatbot_service.update_chatbot_with_documents(

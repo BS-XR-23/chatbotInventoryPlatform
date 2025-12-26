@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey,
 from sqlalchemy.orm import relationship
 from db.database import Base
 from datetime import datetime
-from core.enums import ChatbotMode, VectorStoreType
+from core.enums import VectorStoreType
 
 class Chatbot(Base):
     __tablename__ = "chatbots"
@@ -14,7 +14,6 @@ class Chatbot(Base):
     system_prompt = Column(Text, nullable=True)
     llm_id = Column(Integer, ForeignKey("llms.id"))
     llm_path = Column(String, nullable=False) 
-    mode = Column(Enum(ChatbotMode), default=ChatbotMode.private)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     vector_store_type = Column(
@@ -23,7 +22,6 @@ class Chatbot(Base):
         nullable=False
     )
 
-    vector_store_config = Column(JSON, nullable=True)
 
     vendor = relationship("Vendor", back_populates="chatbots")
     llm = relationship("LLM", back_populates="chatbots")

@@ -1,11 +1,11 @@
 from fastapi import UploadFile, File, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
 from typing import List, Optional
 from uuid import uuid4
-from core.enums import SenderType, ChatbotMode, VectorStoreType, DocumentStatus, UserRole
+from core.enums import SenderType, VectorStoreType, DocumentStatus, UserRole
 from modules.api_keys.models.api_model import APIKey
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
@@ -26,9 +26,8 @@ def create_chatbot_with_documents(
     system_prompt: str,
     llm_id: int,
     llm_path: str,
-    mode,
     vector_store_type: VectorStoreType,
-    vector_store_config: dict | None = None,
+    is_active: bool = True,
     files: list[UploadFile] | None = None
 ):
     # 1️⃣ Create Chatbot
@@ -39,10 +38,8 @@ def create_chatbot_with_documents(
         system_prompt=system_prompt,
         llm_id=llm_id,
         llm_path=llm_path,
-        mode=mode,
         vector_store_type=vector_store_type,
-        vector_store_config=vector_store_config,
-        is_active=True
+        is_active=is_active
     )
     db.add(chatbot)
     db.commit()
@@ -54,11 +51,10 @@ def create_chatbot_with_documents(
 
     if saved_docs:
         try:
-            # embed only the first document, or loop if you want multiple
             embed_document(db, saved_docs[0].id)
         except Exception as e:
             for doc in saved_docs:
-                doc.status = DocumentStatus.processing_failed  # use the correct enum member
+                doc.status = DocumentStatus.processing_failed  
             db.commit()
             raise e
 
@@ -69,10 +65,11 @@ def get_chatbots(db: Session) -> List[Chatbot]:
     return db.query(Chatbot).all()
 
 def get_role_based_stats(db: Session, chatbot_id: int):
-    chatbot = db.query(Chatbot).filter(
-        Chatbot.id == chatbot_id,
-        Chatbot.is_active == True
-    ).first()
+    chatbot = (db.query(Chatbot)
+        .options(joinedload(Chatbot.vendor), joinedload(Chatbot.llm))
+        .filter(Chatbot.id == chatbot_id)
+        .first()
+    )
 
     if not chatbot:
         return None
@@ -107,6 +104,17 @@ def get_vendor_chatbots(db: Session, vendor_id: int) -> List[Chatbot]:
 def get_chatbot(db: Session, chatbot_id: int) -> Chatbot:
     return db.query(Chatbot).get(chatbot_id)
 
+def duplicate_chatbot(db: Session, chatbot_id: int):
+    chatbot = db.query(Chatbot).get(chatbot_id)
+    if not chatbot:
+        return None
+    data = {c.name: getattr(chatbot, c.name) for c in Chatbot.__table__.columns if c.name != "id"}
+    new_chatbot = Chatbot(**data)
+    db.add(new_chatbot)
+    db.commit()
+    db.refresh(new_chatbot)
+    return new_chatbot
+
 def update_chatbot_with_documents(
     db: Session,
     chatbot_id: int,
@@ -124,21 +132,17 @@ def update_chatbot_with_documents(
     chatbot.system_prompt = chatbot_data.system_prompt or chatbot.system_prompt
     chatbot.llm_id = chatbot_data.llm_id or chatbot.llm_id
     chatbot.llm_path = chatbot_data.llm_path or chatbot.llm_path
-    chatbot.mode = chatbot_data.mode or chatbot.mode
     chatbot.vector_store_type = chatbot_data.vector_store_type or chatbot.vector_store_type
-    chatbot.vector_store_config = chatbot_data.vector_store_config or chatbot.vector_store_config
     chatbot.is_active = chatbot_data.is_active if chatbot_data.is_active is not None else chatbot.is_active
 
     db.add(chatbot)
     db.commit()
     db.refresh(chatbot)
 
-    # Handle new documents only if provided
     if files:
         saved_docs = create_documents_bulk(db, chatbot.vendor_id, chatbot.id, files)
         if saved_docs:
             try:
-                # embed first document (or loop if you want multiple)
                 embed_document(db, saved_docs[0].id)
             except Exception as e:
                 for doc in saved_docs:
@@ -193,8 +197,6 @@ def handle_conversation_singleturn(
     )
 
     vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
-    # if not vector_db_obj:
-    #     raise HTTPException(status_code=404, detail="No active VectorDB found for this chatbot")
 
     embedd_obj = db.query(Embedding).filter(
         Embedding.id == llm_obj.embedding_id
@@ -207,6 +209,7 @@ def handle_conversation_singleturn(
 
     if vector_db_obj:
         vectordb = rag_service.load_vectorstore(
+            chatbot.vector_store_type,
             vector_db_obj.db_path,
             embeddings
         )
@@ -248,18 +251,18 @@ def handle_conversation_multiturn(
             detail="Multiturn conversations require a registered user"
         )
 
-    if chatbot.mode == ChatbotMode.private:
-        api_key = db.query(APIKey).filter(
-            APIKey.user_id == user_id,
-            APIKey.chatbot_id == chatbot_id,
-            APIKey.vendor_id == vendor_obj.id,
-            APIKey.status == "active"
-        ).first()
-        if not api_key:
-            raise HTTPException(
-                status_code=403,
-                detail="User does not have an active API key for this private chatbot"
-            )
+    # if chatbot.mode == ChatbotMode.private:
+    #     api_key = db.query(APIKey).filter(
+    #         APIKey.user_id == user_id,
+    #         APIKey.chatbot_id == chatbot_id,
+    #         APIKey.vendor_id == vendor_obj.id,
+    #         APIKey.status == "active"
+    #     ).first()
+    #     if not api_key:
+    #         raise HTTPException(
+    #             status_code=403,
+    #             detail="User does not have an active API key for this private chatbot"
+    #         )
 
     session_id = session_id or str(uuid4())
 
@@ -302,20 +305,17 @@ def handle_conversation_multiturn(
             messages.append(AIMessage(content=msg.content))
 
     vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
-    if not vector_db_obj:
-        raise HTTPException(
-            status_code=404,
-            detail="No active VectorDB found for this chatbot"
-        )
 
     embeddings = OllamaEmbeddings(model=embedd_obj.model_name)
 
-    vectordb = rag_service.load_vectorstore(
-        vector_db_obj.db_path,
-        embeddings
-    )
-
-    context, _ = rag_service.get_rag_context(question, vectordb)
+    if vector_db_obj:
+        vectordb = rag_service.load_vectorstore(
+            vector_db_obj.db_path,
+            embeddings
+        )
+        context, _ = rag_service.get_rag_context(question, vectordb)
+    else:
+        context = None
 
     final_question = (
         f"Context:\n{context}\n\nQuestion:\n{question}"

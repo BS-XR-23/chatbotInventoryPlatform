@@ -30,7 +30,9 @@ class LLMUpdate(BaseModel):
 
 class LLMRead(LLMBase):
     id: int
+    name: str
     embedding: Optional[EmbeddingRead] = None
+    
 
     model_config = ConfigDict(from_attributes=True)
 
