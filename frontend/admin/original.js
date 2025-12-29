@@ -16,6 +16,38 @@ let globalEmbeddings = [];
 let globalLLMs = [];
 let globalVendors = [];
 let selectedChatbotFiles = [];
+let activeChatbotId = null;
+
+/* ===================== NAV ===================== */
+function showSection(id) {
+  // Hide all sections
+  document.querySelectorAll(".section").forEach(s =>
+    s.classList.add("d-none")
+  );
+
+  // Show the selected section
+  document.getElementById(id).classList.remove("d-none");
+
+  // Chat bubble logic like vendor page
+  const chatBubble = document.getElementById("chatBubbleButton");
+  const chatWindow = document.getElementById("chatWindow");
+
+  if (id === "chatbotDetails" && activeChatbotId) {
+    chatBubble.classList.remove("hidden");
+    chatWindow.classList.add("hidden"); // always hidden by default
+  } else {
+    chatBubble.classList.add("hidden");
+    chatWindow.classList.add("hidden");
+    if (id !== "chatbotDetails") activeChatbotId = null;
+  }
+
+  // Load content for the section
+  if (id === "chatbots") loadChatbots();
+  else if (id === "vendors") loadVendors();
+  else if (id === "documents") loadDocuments();
+  else if (id === "embeddings") loadEmbeddings();
+  else if (id === "llms") loadLLMs();
+}
 
 /* ===================== DASHBOARD STATS ===================== */
 async function loadDashboardStats() {
@@ -70,6 +102,173 @@ async function deleteChatbot(chatbotId) {
 
   loadChatbots(); // refresh list after deletion
 }
+
+/* ===================== CHAT UI ===================== */
+function resetChatUI() {
+  document.getElementById("chatWindow").classList.add("hidden");
+  document.getElementById("chatMessages").innerHTML = "";
+  document.getElementById("chatInput").value = "";
+}
+
+// Chat bubble like vendor page
+const chatBubble = document.getElementById("chatBubbleButton");
+const chatWindow = document.getElementById("chatWindow");
+const chatClose = document.querySelector(".chat-close");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendMessageBtn");
+
+// Start hidden globally
+chatBubble.classList.add("hidden");
+chatWindow.classList.add("hidden");
+
+// Bubble click opens chat window
+chatBubble.onclick = function () {
+  if (!activeChatbotId) return;
+  chatWindow.classList.remove("hidden");
+  chatInput.focus();
+};
+
+// Close button
+chatClose.onclick = function () {
+  chatWindow.classList.add("hidden");
+};
+
+// Send message on Enter
+chatInput.onkeydown = function (e) {
+  if (e.key === "Enter") sendMessage();
+};
+
+// Send message on button click
+sendBtn.onclick = sendMessage;
+
+/* ===================== SHOW CHATBOT DETAILS ===================== */
+async function showChatbotDetails(chatbotId) {
+  try {
+    const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/${role}`, { headers });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to fetch chatbot details");
+    }
+    const data = await res.json();
+
+    document.getElementById("chatbotTitle").innerText = data.name || "Chatbot";
+
+    const container = document.getElementById("chatbotDetailsContainer");
+    container.innerHTML = `
+      <div class="card shadow-sm p-3 mb-3">
+        <h3 class="card-title">${data.name}</h3>
+
+        <p><strong>Vendor:</strong> ${data.vendor?.name || "N/A"}</p>
+        <p><strong>Description:</strong> ${data.description || "N/A"}</p>
+        <p><strong>System Prompt:</strong>
+          <pre class="text-muted">${data.system_prompt || "N/A"}</pre>
+        </p>
+        <p><strong>LLM:</strong> ${data.llm?.name || "N/A"}</p>
+        <p><strong>Status:</strong>
+          <span class="badge bg-${data.is_active ? "success" : "secondary"}">
+            ${data.is_active ? "Active" : "Inactive"}
+          </span>
+        </p>
+        <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
+        <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
+
+        <h5 class="mt-4">📄 Documents</h5>
+        <div id="chatbotDocumentsContainer">Loading documents...</div>
+
+        <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">Back</button>
+      </div>
+    `;
+
+    // 🔥 Fetch related documents and render them
+    loadChatbotDocuments(chatbotId);
+
+    activeChatbotId = chatbotId;
+    chatBubble.classList.remove("hidden");
+    resetChatUI();
+    showSection("chatbotDetails");
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load chatbot details.");
+  }
+}
+
+
+async function loadChatbotDocuments(chatbotId) {
+  const docsContainer = document.getElementById("chatbotDocumentsContainer");
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots_documents/${chatbotId}`, { headers });
+
+    if (!res.ok) {
+      docsContainer.innerHTML = `<p class="text-danger">No documents found.</p>`;
+      return;
+    }
+
+    const documents = await res.json();
+
+    if (!documents.length) {
+      docsContainer.innerHTML = `<p class="text-muted">No documents available.</p>`;
+      return;
+    }
+
+    docsContainer.innerHTML = `
+      <ul class="list-group">
+        ${documents.map(doc => `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            ${doc.title || "Unnamed Document"}
+            <span class="badge bg-primary">${new Date(doc.created_at).toLocaleDateString()}</span>
+          </li>
+        `).join("")}
+      </ul>
+    `;
+
+  } catch (error) {
+    docsContainer.innerHTML = `<p class="text-danger">Error loading documents.</p>`;
+    console.error(error);
+  }
+}
+
+
+/* ===================== SEND MESSAGE ===================== */
+async function sendMessage() {
+  const message = chatInput.value.trim();
+  if (!message || !activeChatbotId) return;
+
+  // Append user message
+  const container = document.getElementById("chatMessages");
+  const userDiv = document.createElement("div");
+  userDiv.className = "message user";
+  userDiv.innerText = message;
+  container.appendChild(userDiv);
+  container.scrollTop = container.scrollHeight;
+
+  chatInput.value = "";
+
+  // Send to API
+  try {
+    const res = await fetch(`${API_BASE}/chatbots/${activeChatbotId}/ask`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ question: message }),
+    });
+
+    const data = await res.json();
+
+    const botDiv = document.createElement("div");
+    botDiv.className = "message bot";
+    botDiv.innerText = data.answer || "No response";
+    container.appendChild(botDiv);
+    container.scrollTop = container.scrollHeight;
+  } catch (err) {
+    const botDiv = document.createElement("div");
+    botDiv.className = "message bot";
+    botDiv.innerText = "Failed to get response.";
+    container.appendChild(botDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
 
 // Duplicate chatbot function
 async function duplicateChatbot(chatbotId) {
@@ -912,3 +1111,32 @@ function showAnalytics() {
   loadVendors();        // Vendor analytics
 }
 showAnalytics();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const chatBubble = document.getElementById("chatBubbleButton");
+  const chatWindow = document.getElementById("chatWindow");
+  const chatClose = document.querySelector(".chat-close");
+  const chatInput = document.getElementById("chatInput");
+  const sendBtn = document.getElementById("sendMessageBtn");
+
+  // Open chat window when bubble clicked
+  chatBubble.addEventListener("click", () => {
+    if (!activeChatbotId) return;
+    chatWindow.classList.remove("hidden");
+  });
+
+  // Close chat window
+  chatClose.addEventListener("click", () => {
+    chatWindow.classList.add("hidden");
+  });
+
+  // Send message on Enter key
+  chatInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      sendMessage();
+    }
+  });
+
+  // Send message on button click
+  sendBtn.addEventListener("click", sendMessage);
+});

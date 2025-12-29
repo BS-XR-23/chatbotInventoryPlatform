@@ -76,108 +76,117 @@
       color: black;
     }
 
-    .chat-bubble {
+    /* Chat bubble button */
+    #chatBubbleButton {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #dc3545;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: #0d6efd;
       color: white;
       border-radius: 50%;
-      width: 55px;
-      height: 55px;
+      font-size: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
       cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      z-index: 3000;
+      z-index: 9999;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     }
 
     /* Chat window */
-    .chat-window {
+    #chatWindow {
       position: fixed;
       bottom: 90px;
-      right: 20px;
+      right: 24px;
       width: 320px;
-      max-height: 420px;
+      height: 420px;
       background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-      overflow: hidden;
+      border-radius: 10px;
       display: flex;
       flex-direction: column;
-      z-index: 3500;
+      z-index: 9999;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Hidden state */
+    .hidden {
       display: none;
     }
+
     /* Header */
     .chat-header {
-      background: #dc3545;
+      background: #0d6efd;
       color: white;
-      padding: 12px;
-      font-weight: bold;
+      padding: 10px 12px;
+      font-weight: 600;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
     }
+
+    .chat-close {
+      cursor: pointer;
+      font-size: 18px;
+    }
+
     /* Messages */
     .chat-messages {
       flex: 1;
-      padding: 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      background: #f5f5f5;
-    }
-
-    .chat-message.user {
-      align-self: flex-end;
-      background: #007bff;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 16px;
-      border-bottom-right-radius: 0;
-      max-width: 75%;
-      word-wrap: break-word;
-    }
-
-    .chat-message.bot {
-      align-self: flex-start;
-      background: #e4e6eb;
-      color: black;
-      padding: 8px 12px;
-      border-radius: 16px;
-      border-bottom-left-radius: 0;
-      max-width: 75%;
-      word-wrap: break-word;
-    }
-    .chat-footer {
       padding: 10px;
-      border-top: 1px solid #dee2e6;
-      display: flex;
-      gap: 8px;
+      overflow-y: auto;
+      background: #f8f9fa;
     }
-    .chat-footer input {
+
+    .message {
+      margin-bottom: 8px;
+      max-width: 85%;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: #0d6efd;
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px 8px 0 8px;
+    }
+
+    .message.bot {
+      align-self: flex-start;
+      background: #e9ecef;
+      padding: 8px 10px;
+      border-radius: 8px 8px 8px 0;
+    }
+
+    /* Input */
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+
+    .chat-input input {
       flex: 1;
-      padding: 8px 12px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
+      border: none;
+      padding: 10px;
       outline: none;
     }
-    .chat-footer button {
-      padding: 8px 16px;
-      border-radius: 20px;
+
+    .chat-input button {
       border: none;
-      background: #007bff;
+      background: #0d6efd;
       color: white;
+      padding: 0 14px;
       cursor: pointer;
     }
-    .chat-footer button:hover {
-      background: #0056b3;
-    }
 
-    .d-none { display: none !important; }
+    /* Card hover effect */
+    .card:hover {
+      transform: translateY(-4px);
+      transition: transform 0.2s ease-in-out;
+    }
 
     /* Ensure equal height for top cards */
     .row.g-3 > .col-sm-12 > .card {
@@ -300,7 +309,7 @@
     </div>
 
     <!-- Chatbots Section -->
-    <div id="chatbots" class="d-none">
+    <div id="chatbots" class="section d-none">
       <div class="card mb-3">
         <div class="card-body d-flex justify-content-between align-items-center">
           <h4 class="m-0">Chatbots</h4>
@@ -315,32 +324,32 @@
       </div>
     </div>
     
-    <!--Chatbot Details Section-->
-    <div id="chatbotDetails" class="d-none">
+    <!--Chatbot Details Section-->>
+    <div id="chatbotDetails" class="section d-none">
       <div id="chatbotDetailsContainer" class="container mt-3"></div>
 
-      <!-- Chat Bubble (static, outside dynamic container) -->
-      <div id="chatBubble" class="chat-bubble" onclick="toggleChat()">💬</div>
-
-      <!-- Chat Window (static) -->
-      <div id="chatWindow" class="chat-window">
+      <!-- Chat Bubble (inside Chatbot Details) -->
+      <div id="chatBubbleButton" class="hidden" onclick="openChatWindow()">💬</div>
+      <div id="chatWindow" class="hidden">
         <div class="chat-header">
-          <span id="chatHeaderName">Chatbot</span>
-          <button class="btn btn-sm btn-light" onclick="closeChat()">✖</button>
+          <span id="chatbotTitle">Chatbot</span>
+          <span class="chat-close" onclick="closeChatWindow()">✕</span>
         </div>
         <div id="chatMessages" class="chat-messages"></div>
-        <div class="chat-footer">
-          <input type="text" id="chatInput" placeholder="Type a message...">
-          <button onclick="sendMessage()">Send</button>
+        <div class="chat-input">
+          <input
+            id="chatInput"
+            type="text"
+            placeholder="Type your message..."
+            onkeydown="if(event.key==='Enter') sendMessage()"
+          />
+          <button id="sendMessageBtn" onclick="sendMessage()">Send</button>
         </div>
       </div>
     </div>
 
-
-
-
     <!-- Vendors Section -->
-    <div id="vendors" class="d-none">
+    <div id="vendors" class="section d-none">
       <div class="card mb-3">
         <div class="card-body d-flex justify-content-between align-items-center">
           <h4 class="m-0">Vendors</h4>
@@ -356,7 +365,7 @@
     </div>
 
     <!-- Documents Section -->
-    <div id="documents" class="d-none">
+    <div id="documents" class="section d-none">
       <h4>Documents</h4>
       <div class="card">
         <div class="card-body">
@@ -366,7 +375,7 @@
     </div>
 
     <!-- Embeddings Section -->
-    <div id="embeddings" class="d-none">
+    <div id="embeddings" class="section d-none">
       <h4>Embeddings</h4>
       <div class="card">
         <div class="card-body position-relative">
@@ -377,7 +386,7 @@
     </div>
 
     <!-- LLMs Section -->
-    <div id="llms" class="d-none">
+    <div id="llms" class="section d-none">
       <h4>LLMs</h4>
       <div class="card">
         <div class="card-body position-relative">
@@ -672,10 +681,6 @@
       });
     });
   </script>
-  <script src="chatUi.js"></script>
 
 </body>
 </html>
-
-  
-
