@@ -158,6 +158,7 @@ async function loadChatbots() {
 async function showChatbotDetails(chatbotId) {
   showSection("chatbotDetails");
 
+  // Fetch Chatbot Details
   const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/vendor`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -170,9 +171,40 @@ async function showChatbotDetails(chatbotId) {
   document.getElementById("detailsChatbotSystemPrompt").innerText = data.system_prompt || "";
 
   // Chat bubble setup
-  const chatBubble = document.getElementById("chatBubble");
-  chatBubble.onclick = () => openChat(chatbotId, data.name);
+  document.getElementById("chatBubble").onclick = () => openChat(chatbotId, data.name);
+
+  // Fetch & Display Documents
+  await loadChatbotDocuments(chatbotId);
 }
+
+async function loadChatbotDocuments(chatbotId) {
+  const container = document.getElementById("chatbotDocumentsContainer");
+  if (!container) return; // Safety check
+  container.innerHTML = "Loading documents...";
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots_documents/${chatbotId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const docs = await res.json();
+
+    if (!docs.length) {
+      container.innerHTML = "<p>No documents found for this chatbot.</p>";
+      return;
+    }
+
+    // Display document titles
+    container.innerHTML = `<ul class="list-group">
+      ${docs.map(doc => `<li class="list-group-item">${doc.title}</li>`).join("")}
+    </ul>`;
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p style='color:red;'>Failed to load documents.</p>";
+  }
+}
+
+
 
 // Open Chat
 function openChat(chatbotId, chatbotName) {

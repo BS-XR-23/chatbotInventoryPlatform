@@ -43,6 +43,13 @@ def get_document(document_id: int, db: Session = Depends(get_db), current_vendor
         raise HTTPException(status_code=404, detail="Document not found")
     return document
 
+@router.get("/chatbots_documents/{chatbot_id}", response_model=List[DocumentRead])
+def get_documents_by_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
+    documents = document_service.get_documents_by_chatbot(db, chatbot_id)
+    if not documents:
+        raise HTTPException(status_code=404, detail="No documents found for this chatbot")
+    return documents
+
 @router.put("/{document_id}", response_model=DocumentRead)
 def update_document(document_id: int, document_data: DocumentCreate, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
     document = document_service.update_document(db, document_id, document_data)
