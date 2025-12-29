@@ -1,17 +1,12 @@
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma, FAISS
+from langchain_community.vectorstores import FAISS
+from langchain_chroma import Chroma
 import os
 from pathlib import Path
-import qdrant_client
-import pinecone
-import weaviate
-from core.enums import DocumentStatus, VectorStoreType
+from core.enums import VectorStoreType
 from modules.chatbots.models.chatbot_model import Chatbot
-from modules.embeddings.models.embedding_model import Embedding
 from utils.convert_to_txt import convert_to_txt
 
 def create_vector_store(store_type, chatbot_id, embeddings, chunks):

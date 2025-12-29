@@ -275,9 +275,12 @@ def handle_conversation_multiturn(
 
     if not chatbot.llm_path:
         raise HTTPException(status_code=400, detail="Chatbot does not have an LLM path configured")
+    
+    if not chatbot.llm_path or chatbot.llm_path.strip() == "":
+        raise HTTPException(status_code=400, detail="Chatbot llm_path is empty or not configured")
 
     model = ChatOllama(
-        model=chatbot.llm_path,
+        model=chatbot.llm_path.strip(),
         temperature=0.7,
     )
 

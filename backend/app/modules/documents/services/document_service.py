@@ -59,6 +59,10 @@ def create_documents_bulk(
 def get_documents(db: Session) -> List[Document]:
     return db.query(Document).all()
 
+def get_documents_by_chatbot(db: Session, chatbot_id: int):
+    return db.query(Document).filter(Document.chatbot_id == chatbot_id).all()
+
+
 def get_document(db: Session, document_id: int) -> Document:
     return db.query(Document).filter(Document.id == document_id).first()
 

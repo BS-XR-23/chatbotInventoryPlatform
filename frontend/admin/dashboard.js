@@ -145,12 +145,10 @@ sendBtn.onclick = sendMessage;
 async function showChatbotDetails(chatbotId) {
   try {
     const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/${role}`, { headers });
-
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.detail || "Failed to fetch chatbot details");
     }
-
     const data = await res.json();
 
     document.getElementById("chatbotTitle").innerText = data.name || "Chatbot";
@@ -174,9 +172,15 @@ async function showChatbotDetails(chatbotId) {
         <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
         <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
 
+        <h5 class="mt-4">📄 Documents</h5>
+        <div id="chatbotDocumentsContainer">Loading documents...</div>
+
         <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">Back</button>
       </div>
     `;
+
+    // 🔥 Fetch related documents and render them
+    loadChatbotDocuments(chatbotId);
 
     activeChatbotId = chatbotId;
     chatBubble.classList.remove("hidden");
@@ -188,6 +192,43 @@ async function showChatbotDetails(chatbotId) {
     alert("Failed to load chatbot details.");
   }
 }
+
+
+async function loadChatbotDocuments(chatbotId) {
+  const docsContainer = document.getElementById("chatbotDocumentsContainer");
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots_documents/${chatbotId}`, { headers });
+
+    if (!res.ok) {
+      docsContainer.innerHTML = `<p class="text-danger">No documents found.</p>`;
+      return;
+    }
+
+    const documents = await res.json();
+
+    if (!documents.length) {
+      docsContainer.innerHTML = `<p class="text-muted">No documents available.</p>`;
+      return;
+    }
+
+    docsContainer.innerHTML = `
+      <ul class="list-group">
+        ${documents.map(doc => `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            ${doc.title || "Unnamed Document"}
+            <span class="badge bg-primary">${new Date(doc.created_at).toLocaleDateString()}</span>
+          </li>
+        `).join("")}
+      </ul>
+    `;
+
+  } catch (error) {
+    docsContainer.innerHTML = `<p class="text-danger">Error loading documents.</p>`;
+    console.error(error);
+  }
+}
+
 
 /* ===================== SEND MESSAGE ===================== */
 async function sendMessage() {
