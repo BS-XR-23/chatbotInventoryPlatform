@@ -8,8 +8,6 @@ let selectedNewFiles = [];
 let llmMap = {};
 
 // ------------------ Section Control ------------------
-// ------------------ Section Control ------------------
-// ------------------ Section Control ------------------
 function showSection(section) {
   // Hide all sections including chatbot details
   [
