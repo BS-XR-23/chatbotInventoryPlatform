@@ -248,7 +248,6 @@
           <th>Name</th>
           <th>LLM</th>
           <th>Vector Store</th>
-          <th>Mode</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -328,9 +327,22 @@
       <p><strong>Description:</strong> <span id="detailsChatbotDescription"></span></p>
       <p><strong>System Prompt:</strong></p>
       <pre id="detailsChatbotSystemPrompt"></pre>
+
       <div class="card shadow-sm p-3 mb-3">
         <h5>📄 Documents</h5>
         <div id="chatbotDocumentsContainer">Loading documents...</div>
+
+        <!-- Upload Documents in Details Page -->
+        <div class="mt-3">
+          <label for="documentFilesDetail" class="form-label">Upload Documents</label>
+          <input type="file" id="documentFilesDetail" class="form-control" multiple
+            onchange="Array.from(this.files).forEach(f => {
+              if(!selectedDetailFiles.some(x => x.name === f.name)) selectedDetailFiles.push(f);
+              renderDetailSelectedFiles();
+            })">
+          <ul id="selectedFilesPreviewDetail" class="list-group mt-2 mb-2"></ul>
+          <button class="btn btn-primary" onclick="uploadDocumentsForDetail()">Upload</button>
+        </div>
       </div>
     </div>
 
@@ -350,6 +362,7 @@
       </div>
     </div>
   </div>
+
 
 </div>
 

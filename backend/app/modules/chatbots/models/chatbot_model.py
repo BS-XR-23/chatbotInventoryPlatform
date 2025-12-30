@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, JSON, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, Enum, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from db.database import Base
 from datetime import datetime
@@ -21,8 +21,6 @@ class Chatbot(Base):
         default=VectorStoreType.chroma,
         nullable=False
     )
-
-
     vendor = relationship("Vendor", back_populates="chatbots")
     llm = relationship("LLM", back_populates="chatbots")
     documents = relationship("Document", back_populates="chatbot", cascade="all, delete-orphan")

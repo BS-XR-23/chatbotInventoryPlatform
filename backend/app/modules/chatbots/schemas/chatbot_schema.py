@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, Dict, Any
+from typing import Optional
 from datetime import datetime
 from core.enums import VectorStoreType
 from modules.vendors.schemas.vendor_schema import VendorRead
