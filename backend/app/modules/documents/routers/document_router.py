@@ -5,7 +5,9 @@ from db.database import get_db
 from modules.documents.schemas.document_schema import DocumentCreate, DocumentRead
 from modules.documents.services import document_service
 from modules.vendors.models.vendor_model import Vendor
+from modules.admins.models.admin_model import Admin
 from modules.auth.vendors.auth_vendor import get_current_vendor
+from modules.auth.admins.auth_admin import get_current_admin
 
 router = APIRouter(tags=["Documents"])
 
@@ -14,23 +16,18 @@ def upload_documents(
     chatbot_id: int,
     files: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(get_current_vendor)
 ):
-    # 1. Save documents
-    saved_docs = document_service.create_documents_bulk(db, current_vendor.id, chatbot_id, files)
+    saved_docs = document_service.create_documents_bulk(db, chatbot_id, files)
 
-    # 2. Embed each document automatically
     for doc in saved_docs:
         try:
             vector_db = document_service.embed_document(db, doc.id)
             doc.status = "embedded"
         except Exception as e:
             doc.status = "processing_failed"
-            # optionally log the error
 
     db.commit()
     return saved_docs
-
 
 @router.get("/", response_model=List[DocumentRead])
 def get_documents(db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
@@ -42,6 +39,14 @@ def get_document(document_id: int, db: Session = Depends(get_db), current_vendor
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
+
+@router.get("/specific_documents/{chatbot_id}", response_model=List[DocumentRead])
+def get_specific_documents(
+    chatbot_id: int,
+    db: Session = Depends(get_db),
+):
+    docs = document_service.get_specific_documents(db, chatbot_id)
+    return docs
 
 @router.get("/chatbots_documents/{chatbot_id}", response_model=List[DocumentRead])
 def get_documents_by_chatbot(chatbot_id: int, db: Session = Depends(get_db)):
@@ -68,7 +73,6 @@ def delete_document(document_id: int, db: Session = Depends(get_db), current_ven
 def embed_document_endpoint(
     document_id: int,
     db: Session = Depends(get_db),
-    current_vendor: Vendor = Depends(get_current_vendor)
 ):
     try:
         vector_db = document_service.embed_document(db, document_id)

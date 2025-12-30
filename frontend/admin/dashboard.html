@@ -358,8 +358,27 @@
     <!-- Documents Section -->
     <div id="documents" class="d-none">
       <h4>Documents</h4>
-      <div class="card">
+
+      <!-- Chatbot Selection -->
+      <div class="mb-3">
+        <label for="documentChatbotSelect" class="form-label">Select Chatbot</label>
+        <select id="documentChatbotSelect" class="form-select" required>
+          <option value="">-- Select Chatbot --</option>
+          <!-- Populated dynamically by loadChatbots() -->
+        </select>
+      </div>
+      
+      <!-- File Upload -->
+      <div class="mb-3">
+        <label for="documentFiles" class="form-label">Upload Documents</label>
+        <input type="file" id="documentFiles" class="form-control" multiple>
+        <button class="btn btn-primary mt-2" onclick="uploadDocuments()">Upload</button>
+      </div>
+
+      <!-- Existing Documents List -->
+      <div class="card mt-3">
         <div class="card-body">
+          <h5 class="card-title">Uploaded Documents</h5>
           <ul id="documentList" class="list-group"></ul>
         </div>
       </div>

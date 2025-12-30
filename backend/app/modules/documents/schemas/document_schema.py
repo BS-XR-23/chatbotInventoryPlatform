@@ -3,7 +3,6 @@ from typing import Optional
 from core.enums import DocumentStatus
 
 class DocumentBase(BaseModel):
-    vendor_id: int
     chatbot_id: int
     title: str
     file_path: str
@@ -28,7 +27,6 @@ class DocumentRead(DocumentBase):
 # from core.enums import DocumentStatus
 
 # class DocumentBase(BaseModel):
-#     vendor_id: int
 #     chatbot_id: int
 #     title: str
 #     summary: Optional[str] =None

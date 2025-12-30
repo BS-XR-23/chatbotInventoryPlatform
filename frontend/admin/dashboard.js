@@ -2,6 +2,8 @@ const API_BASE = "http://127.0.0.1:9000";
 const token = localStorage.getItem("access_token");
 const role = localStorage.getItem("role");
 
+let selectedNewFiles = [];
+
 if (!token) {
   window.location.href = "/index.html";
 }
@@ -169,7 +171,6 @@ async function loadChatbots() {
     detailsBtn.addEventListener("click", () => showChatbotDetails(bot.id));
     tdActions.appendChild(detailsBtn);
 
-
     tr.appendChild(tdActions);
     tbody.appendChild(tr);
   });
@@ -186,7 +187,22 @@ async function loadChatbots() {
   } else {
     mostUsedChatbot.innerText = "No analytics data available";
   }
+
+  // -------------------------------
+  // Populate chatbot dropdown for document uploads
+  // -------------------------------
+  const documentChatbotSelect = document.getElementById("documentChatbotSelect");
+  if (documentChatbotSelect) {
+    documentChatbotSelect.innerHTML = '<option value="">-- Select Chatbot --</option>';
+    bots.forEach(bot => {
+      const option = document.createElement("option");
+      option.value = bot.id;
+      option.text = bot.name;
+      documentChatbotSelect.appendChild(option);
+    });
+  }
 }
+
 
 
 /* ===================== CHATBOT MODAL ===================== */
@@ -386,7 +402,9 @@ async function loadVendors() {
   const vendors = await res.json();
   globalVendors = vendors; // save globally for modal use
 
+  // ---------------------------
   // Populate vendor list (for vendor card)
+  // ---------------------------
   const vendorListEl = document.getElementById("vendorList");
   vendorListEl.innerHTML = "";
 
@@ -409,7 +427,9 @@ async function loadVendors() {
       </li>`;
   });
 
+  // ---------------------------
   // Populate analytics dropdown
+  // ---------------------------
   const analyticsSelect = document.getElementById("vendorSelectAnalytics");
   analyticsSelect.innerHTML = "";
   vendors.forEach(v => {
@@ -428,11 +448,26 @@ async function loadVendors() {
     loadTotalTokensAnalytics();
   }
 
-  // // Most users vendor
+  // ---------------------------
+  // Populate vendor dropdown for Admin Document Uploads
+  // ---------------------------
+  const vendorSelectUpload = document.getElementById("chatbotVendorId");
+  if (vendorSelectUpload) {
+    vendorSelectUpload.innerHTML = '<option value="">-- Select Vendor --</option>';
+    vendors.forEach(v => {
+      const option = document.createElement("option");
+      option.value = v.id;
+      option.text = v.name;
+      vendorSelectUpload.appendChild(option);
+    });
+  }
+
+  // ---------------------------
+  // Optional: Most users vendor (commented)
+  // ---------------------------
   // const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
   // let usersData = await usersRes.json();
   // if (Array.isArray(usersData)) usersData = usersData[0];
-
   // if (usersData?.vendor) {
   //   mostUsersVendor.innerHTML = `
   //     <strong>Vendor with Most Users</strong><br>
@@ -443,11 +478,12 @@ async function loadVendors() {
   //   mostUsersVendor.innerText = "No data available";
   // }
 
-  // // Most chatbots vendor
+  // ---------------------------
+  // Optional: Most chatbots vendor (commented)
+  // ---------------------------
   // const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
   // let botsData = await botsRes.json();
   // if (Array.isArray(botsData)) botsData = botsData[0];
-
   // if (botsData?.vendor) {
   //   mostChatbotsVendor.innerHTML = `
   //     <strong>Vendor with Most Chatbots</strong><br>
@@ -458,6 +494,7 @@ async function loadVendors() {
   //   mostChatbotsVendor.innerText = "No data available";
   // }
 }
+
 
 
 
@@ -557,18 +594,111 @@ async function submitCreateVendor(event) {
 
 /* ===================== DOCUMENTS ===================== */
 async function loadDocuments() {
-  const res = await fetch(`${API_BASE}/admins/documents`, { headers });
-  const docs = await res.json();
+  const chatbotId = document.getElementById("documentChatbotSelect").value;
+  const documentList = document.getElementById("documentList");
+  documentList.innerHTML = ""; // Clear the list first
 
-  documentList.innerHTML = "";
-  docs.forEach(doc => {
-    documentList.innerHTML += `
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <span>${doc.title}</span>
-        <span class="badge bg-secondary">${doc.status}</span>
-      </li>`;
-  });
+  // Only load documents if both chatbot and vendor are selected
+  if (!chatbotId) {
+    return; 
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/specific_documents/${chatbotId}`, { headers });
+    if (!res.ok) throw new Error("Failed to fetch documents");
+
+    const docs = await res.json();
+
+    docs.forEach(doc => {
+      documentList.innerHTML += `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>${doc.title}</span>
+          <span class="badge bg-secondary">${doc.status}</span>
+        </li>
+      `;
+    });
+  } catch (error) {
+    console.error("Error loading documents:", error);
+    alert("Error loading documents: " + error.message);
+  }
 }
+
+// Listen for file selection
+document.getElementById("documentFiles").addEventListener("change", (e) => {
+  const files = Array.from(e.target.files);
+
+  // Add new files, prevent duplicates
+  files.forEach(f => {
+    if (!selectedNewFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+      selectedNewFiles.push(f);
+    }
+  });
+
+  renderSelectedFiles();
+});
+
+async function uploadDocuments() {
+  const chatbotId = documentChatbotSelect.value;
+  if (!chatbotId) return alert("Select a chatbot first");
+  if (selectedNewFiles.length === 0) return alert("Select files to upload");
+
+  const formData = new FormData();
+  selectedNewFiles.forEach(f => formData.append("files", f));
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots/${chatbotId}/documents`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return alert("Upload failed: " + err);
+    }
+
+    alert("Upload successful");
+    selectedNewFiles = [];
+    document.getElementById("documentFiles").value = "";
+    renderSelectedFiles();
+    loadDocuments(); // Refresh document list
+  } catch (error) {
+    alert("Upload failed: " + error.message);
+  }
+}
+
+// -------- MULTI-FILE FIX --------
+// Render selected files with remove option
+function renderSelectedFiles() {
+  const preview = document.getElementById("selectedFilesPreview") || document.createElement("ul");
+  preview.id = "selectedFilesPreview";
+  preview.classList.add("list-group", "mb-2");
+  preview.innerHTML = "";
+
+  selectedNewFiles.forEach((file, index) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.textContent = file.name;
+
+    const btn = document.createElement("button");
+    btn.className = "btn btn-sm btn-danger";
+    btn.textContent = "Remove";
+    btn.addEventListener("click", () => {
+      selectedNewFiles.splice(index, 1);
+      renderSelectedFiles();
+    });
+
+    li.appendChild(btn);
+    preview.appendChild(li);
+  });
+
+  // Append preview after file input if not already in DOM
+  const container = document.getElementById("documentFiles").parentElement;
+  if (!document.getElementById("selectedFilesPreview")) {
+    container.appendChild(preview);
+  }
+}
+
 
 /* ===================== EMBEDDINGS ===================== */
 async function loadEmbeddings() {
@@ -912,3 +1042,13 @@ function showAnalytics() {
   loadVendors();        // Vendor analytics
 }
 showAnalytics();
+window.addEventListener("DOMContentLoaded", () => {
+  const vendorDropdown = document.getElementById("chatbotVendorId");
+  const chatbotDropdown = document.getElementById("documentChatbotSelect");
+
+  if (vendorDropdown && chatbotDropdown) {
+    vendorDropdown.addEventListener("change", loadDocuments);
+    chatbotDropdown.addEventListener("change", loadDocuments);
+  }
+});
+
