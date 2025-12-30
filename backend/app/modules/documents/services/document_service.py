@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, UploadFile
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 import uuid, shutil
 from core.enums import DocumentStatus
@@ -22,7 +22,6 @@ PERMANENT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def create_documents_bulk(
     db: Session,
-    vendor_id: int,
     chatbot_id: int,
     files: List[UploadFile]
 ) -> List[Document]:
@@ -30,7 +29,7 @@ def create_documents_bulk(
         raise HTTPException(status_code=400, detail="No files uploaded")
 
     saved_documents = []
-    upload_dir = PERMANENT_UPLOAD_DIR / str(vendor_id) / str(chatbot_id)
+    upload_dir = PERMANENT_UPLOAD_DIR / str(chatbot_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     for file in files:
@@ -41,7 +40,6 @@ def create_documents_bulk(
             shutil.copyfileobj(file.file, f)
 
         doc = Document(
-            vendor_id=vendor_id,
             chatbot_id=chatbot_id,
             title=file.filename,
             file_path=str(file_path),
@@ -58,6 +56,13 @@ def create_documents_bulk(
 
 def get_documents(db: Session) -> List[Document]:
     return db.query(Document).all()
+
+def get_specific_documents(db: Session, chatbot_id: int):
+    if chatbot_id:
+        documents = db.query(Document).filter(Document.chatbot_id==chatbot_id).all()
+        return documents
+
+
 
 def get_documents_by_chatbot(db: Session, chatbot_id: int):
     return db.query(Document).filter(Document.chatbot_id == chatbot_id).all()
@@ -87,7 +92,6 @@ def delete_document(db: Session, document_id: int) -> bool:
 
 def embed_document(db: Session, document_id: int) -> VectorDB:
     try:
-        # Fetch the document
         document_obj = db.query(Document).filter(Document.id == document_id).first()
         if not document_obj:
             raise HTTPException(status_code=404, detail="Document not found")
@@ -111,15 +115,17 @@ def embed_document(db: Session, document_id: int) -> VectorDB:
         if not document_list:
             raise HTTPException(status_code=404, detail="No documents found for this chatbot")
 
-        vectordb_obj = rag_service.embedd_document(db, chatbot.id, embedd_obj, document_list)
-
         existing_count = db.query(VectorDB).filter(VectorDB.chatbot_id == chatbot.id).count()
         vector_db_name = f"{chatbot.name}_vdb_{existing_count + 1}"
+
+        vectordb_obj = rag_service.embedd_document(db, chatbot.id, embedd_obj, document_list)
+        persist_path = vectordb_obj._persist_directory
+
 
         vector_db = VectorDB(
             chatbot_id=chatbot.id,
             name=vector_db_name,
-            db_path=vectordb_obj.persist_path,
+            db_path=persist_path,   # ✅ correct path saved
             is_active=True
         )
         db.add(vector_db)

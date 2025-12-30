@@ -47,7 +47,7 @@ def create_chatbot_with_documents(
 
     saved_docs = []
     if files:
-        saved_docs = create_documents_bulk(db, vendor_id, chatbot.id, files)
+        saved_docs = create_documents_bulk(db, chatbot.id, files)
 
     if saved_docs:
         try:

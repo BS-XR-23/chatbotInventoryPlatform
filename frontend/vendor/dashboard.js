@@ -255,10 +255,6 @@ async function sendMessage() {
   }
 }
 
-
-
-
-
 // ------------------ Documents ------------------
 async function loadDocuments() {
   showSection("documents");
@@ -267,6 +263,7 @@ async function loadDocuments() {
   documentList.innerHTML = "";
   documentChatbotSelect.innerHTML = "";
 
+  // Load chatbots into dropdown
   const botRes = await fetch(`${API_BASE}/chatbots/`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -276,34 +273,41 @@ async function loadDocuments() {
     documentChatbotSelect.innerHTML += `<option value="${b.id}">${b.name}</option>`;
   });
 
-  const docRes = await fetch(`${API_BASE}/documents/`, {
+  // Auto-load documents for the first chatbot
+  if (bots.length > 0) {
+    loadDocumentsForChatbot(bots[0].id);
+  }
+}
+
+async function loadDocumentsForChatbot(chatbotId) {
+  documentList.innerHTML = "";
+
+  const docRes = await fetch(`${API_BASE}/documents/specific_documents/${chatbotId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  const docs = await docRes.json();
 
+  const docs = await docRes.json();
+  console.log("Docs response:", docs);
+
+  // Protect against invalid response
+  if (!Array.isArray(docs)) {
+    documentList.innerHTML = `<li class="list-group-item text-danger">No documents found for this chatbot.</li>`;
+    return;
+  }
+
+  // Render documents
   docs.forEach(d => {
-    // Map enum to badge
-    let statusBadge = '';
-    switch(d.status) {
-      case 'processing':
-        statusBadge = '<span class="badge bg-warning text-dark">Processing</span>';
-        break;
-      case 'embedded':
-        statusBadge = '<span class="badge bg-success">Embedded</span>';
-        break;
-      case 'processing_failed':
-        statusBadge = '<span class="badge bg-danger">Failed</span>';
-        break;
-      default:
-        statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+    let statusBadge = "";
+    switch (d.status) {
+      case "processing": statusBadge = '<span class="badge bg-warning text-dark">Processing</span>'; break;
+      case "embedded": statusBadge = '<span class="badge bg-success">Embedded</span>'; break;
+      case "processing_failed": statusBadge = '<span class="badge bg-danger">Failed</span>'; break;
+      default: statusBadge = '<span class="badge bg-secondary">Unknown</span>';
     }
 
     documentList.innerHTML += `
       <li class="list-group-item d-flex justify-content-between align-items-start">
-        <!-- Left: Title -->
         <div>${d.title}</div>
-
-        <!-- Right: Status + Delete vertically -->
         <div class="d-flex flex-column align-items-end">
           <span class="mb-1">${statusBadge}</span>
           <button class="btn btn-sm btn-danger" onclick="deleteDocument(${d.id}, this)">Delete</button>
@@ -312,7 +316,10 @@ async function loadDocuments() {
   });
 }
 
-
+// Reload documents when chatbot is changed
+documentChatbotSelect.addEventListener("change", (e) => {
+  loadDocumentsForChatbot(e.target.value);
+});
 
 
 // -------- MULTI-FILE FIX --------
@@ -377,7 +384,6 @@ async function uploadDocuments() {
 
     alert("Upload successful");
 
-    // Refresh documents list
     loadDocuments();
 
     // Clear selected files and update preview
