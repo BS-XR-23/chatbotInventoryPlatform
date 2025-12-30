@@ -144,7 +144,6 @@ async function loadChatbots() {
         <td>${b.name}</td>
         <td>${llmMap[b.llm_id] || "N/A"}</td>
         <td>${b.vector_store_type || "N/A"}</td>
-        <td>${b.mode}</td>
         <td>
           <button class="btn btn-sm btn-info" onclick="showChatbotDetails(${b.id})">Details</button>
         </td>
@@ -191,9 +190,19 @@ async function loadChatbotDocuments(chatbotId) {
       return;
     }
 
-    // Display document titles
+    // Display document title, status, and created_at (vertically aligned on right)
     container.innerHTML = `<ul class="list-group">
-      ${docs.map(doc => `<li class="list-group-item">${doc.title}</li>`).join("")}
+      ${docs.map(doc => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div><strong>${doc.title}</strong></div>
+          <div class="text-end">
+            <span class="badge bg-${doc.status === "processing" ? "warning" : doc.status === "active" ? "success" : "secondary"} mb-1">
+              ${doc.status}
+            </span><br>
+            <small class="text-muted">${doc.created_at ? new Date(doc.created_at).toLocaleString() : ""}</small>
+          </div>
+        </li>
+      `).join("")}
     </ul>`;
 
   } catch (err) {
@@ -201,6 +210,67 @@ async function loadChatbotDocuments(chatbotId) {
     container.innerHTML = "<p style='color:red;'>Failed to load documents.</p>";
   }
 }
+
+
+// ------------------ ChatbotsDetails Document Upload ------------------
+let selectedDetailFiles = [];
+
+// Render selected files in details page
+function renderDetailSelectedFiles() {
+  const preview = document.getElementById("selectedFilesPreviewDetail");
+  preview.innerHTML = "";
+
+  selectedDetailFiles.forEach((file, index) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.textContent = file.name;
+
+    const btn = document.createElement("button");
+    btn.className = "btn btn-sm btn-danger";
+    btn.textContent = "Remove";
+    btn.onclick = () => {
+      selectedDetailFiles.splice(index, 1);
+      renderDetailSelectedFiles();
+    };
+
+    li.appendChild(btn);
+    preview.appendChild(li);
+  });
+}
+
+// Upload documents for details page
+async function uploadDocumentsForDetail() {
+  if (!window.activeChatbotId) return alert("No chatbot selected");
+  if (selectedDetailFiles.length === 0) return alert("Select files to upload");
+
+  const formData = new FormData();
+  selectedDetailFiles.forEach(f => formData.append("files", f));
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots/${window.activeChatbotId}/documents`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return alert("Upload failed: " + err);
+    }
+
+    alert("Upload successful!");
+    selectedDetailFiles = [];
+    document.getElementById("documentFilesDetail").value = "";
+    renderDetailSelectedFiles();
+
+    // Refresh documents list
+    loadChatbotDocuments(window.activeChatbotId);
+
+  } catch (err) {
+    alert("Upload failed: " + err.message);
+  }
+}
+
 
 
 

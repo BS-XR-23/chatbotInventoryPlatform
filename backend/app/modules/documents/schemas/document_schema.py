@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
+from datetime import datetime
 from core.enums import DocumentStatus
 
 class DocumentBase(BaseModel):
@@ -19,6 +20,7 @@ class DocumentUpdate(BaseModel):
 
 class DocumentRead(DocumentBase):
     id: int
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

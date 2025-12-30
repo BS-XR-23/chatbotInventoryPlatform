@@ -294,7 +294,6 @@ function openUpdateChatbotModal(bot) {
   modal.show();
 }
 
-
 function updateLLMPath() {
   const llmSelect = document.getElementById("chatbotLLMId");
   const pathInput = document.getElementById("chatbotLLMPath");
@@ -419,7 +418,7 @@ async function loadVendors() {
         </div>
         <div class="d-flex flex-column align-items-end gap-2">
           <span class="badge bg-secondary">${v.status || 'N/A'}</span>
-          <button class="btn btn-sm btn-outline-warning"
+          <button class="btn btn-sm btn-warning-solid"
             onclick="updateVendorStatus(${v.id})">
             Update Status
           </button>
@@ -495,9 +494,6 @@ async function loadVendors() {
   // }
 }
 
-
-
-
 async function loadTotalTokensAnalytics() {
   const vendorId = document.getElementById("vendorSelectAnalytics").value;
   if (!vendorId) return;
@@ -512,9 +508,6 @@ async function loadTotalTokensAnalytics() {
     <strong>Total Tokens Used:</strong> ${displayText}
   `;
 }
-
-
-
 
 async function updateVendorStatus(id) {
   const status = prompt("Enter status (active / inactive):");
@@ -591,14 +584,13 @@ async function submitCreateVendor(event) {
   loadVendors(); // refresh vendor list
 }
 
-
 /* ===================== DOCUMENTS ===================== */
 async function loadDocuments() {
   const chatbotId = document.getElementById("documentChatbotSelect").value;
   const documentList = document.getElementById("documentList");
   documentList.innerHTML = ""; // Clear the list first
 
-  // Only load documents if both chatbot and vendor are selected
+  // Only load documents if chatbot is selected
   if (!chatbotId) {
     return; 
   }
@@ -699,7 +691,6 @@ function renderSelectedFiles() {
   }
 }
 
-
 /* ===================== EMBEDDINGS ===================== */
 async function loadEmbeddings() {
   const list = document.getElementById("embeddingList");
@@ -722,11 +713,11 @@ async function loadEmbeddings() {
           <small class="text-muted">${e.provider}</small>
         </div>
         <div class="d-flex flex-column gap-1">
-          <button class="btn btn-sm btn-outline-warning"
+          <button class="btn btn-sm btn-warning-solid"
             onclick="openUpdateEmbeddingModal(${e.id}, '${e.model_name.replace(/'/g,"\\'")}', '${e.provider.replace(/'/g,"\\'")}', '${e.path?.replace(/'/g,"\\'") || ""}')">
             Update
           </button>
-          <button class="btn btn-sm btn-outline-danger"
+          <button class="btn btn-sm btn-danger-solid"
             onclick="deleteEmbedding(${e.id})">
             Delete
           </button>
@@ -823,11 +814,11 @@ async function loadLLMs() {
           <small class="text-muted">Provider: ${l.provider} | Embedding: ${l.embedding?.model_name || "None"}</small>
         </div>
         <div class="d-flex flex-column gap-1">
-          <button class="btn btn-sm btn-outline-warning"
+          <button class="btn btn-sm btn-warning-solid"
             onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}', '${l.status}')">
             Update
           </button>
-          <button class="btn btn-sm btn-outline-danger"
+          <button class="btn btn-sm btn-danger-solid"
             onclick="deleteLLM(${l.id})">
             Delete
           </button>

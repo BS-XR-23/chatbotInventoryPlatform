@@ -1,9 +1,10 @@
 // Globals
 window.activeChatbotId = null;
 window.activeChatbotName = null;
+let selectedDetailFiles = [];
 
 function showSection(section) {
-  // List of valid sections that actually exist in HTML
+  // All possible sections including dashboard
   const sections = [
     "dashboard",
     "chatbots",
@@ -11,37 +12,55 @@ function showSection(section) {
     "documents",
     "embeddings",
     "llms",
-    "chatbotDetails" // correct ID from your HTML
+    "chatbotDetails"
   ];
 
-  // Hide all first
+  // Hide all sections
   sections.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add("d-none");
   });
 
   // Show the requested section
-  const target = document.getElementById(section === "chatbotDetails" ? "chatbotDetails" : section);
+  const target = document.getElementById(section);
   if (target) target.classList.remove("d-none");
 
-  // Chat bubble + window behavior
+  // Chat bubble & window references
   const chatBubble = document.getElementById("chatBubble");
   const chatWindow = document.getElementById("chatWindow");
 
-  if (section === "chatbotDetails") {
-    if (chatBubble) chatBubble.style.display = "flex"; // enable bubble
-  } else {
-    if (chatBubble) chatBubble.style.display = "none"; // hide bubble
-    if (chatWindow) chatWindow.style.display = "none"; // ensure closed
+  // Always hide chat bubble & window first
+  if (chatBubble) chatBubble.style.display = "none";
+  if (chatWindow) chatWindow.style.display = "none";
+
+  // Only show chat bubble if we're in chatbotDetails
+  if (section === "chatbotDetails" && chatBubble) {
+    chatBubble.style.display = "flex";
   }
 
-  // Load lists depending on where we are
-  if (section === "chatbots") loadChatbots();
-  else if (section === "vendors") loadVendors();
-  else if (section === "documents") loadDocuments();
-  else if (section === "embeddings") loadEmbeddings();
-  else if (section === "llms") loadLLMs();
+  // Load dynamic content depending on section
+  switch(section) {
+    case "dashboard":
+      loadAnalytics();
+      break;
+    case "chatbots":
+      loadChatbots();
+      break;
+    case "vendors":
+      loadVendors();
+      break;
+    case "documents":
+      loadDocuments();
+      break;
+    case "embeddings":
+      loadEmbeddings();
+      break;
+    case "llms":
+      loadLLMs();
+      break;
+  }
 }
+
 
 function openChat(chatbotId, chatbotName) {
   const chatWindow = document.getElementById("chatWindow");
@@ -62,7 +81,7 @@ function closeChat() {
   document.getElementById("chatWindow").style.display = "none";
 }
 
-/* ===================== SHOW CHATBOT DETAILS ===================== */
+// ===================== SHOW CHATBOT DETAILS =====================
 async function showChatbotDetails(chatbotId) {
   showSection("chatbotDetails");
 
@@ -73,7 +92,7 @@ async function showChatbotDetails(chatbotId) {
       throw new Error(err.detail || "Failed to fetch chatbot details");
     }
     const data = await res.json();
-    // Store globally
+
     window.activeChatbotId = chatbotId;
     window.activeChatbotName = data.name;
 
@@ -93,22 +112,30 @@ async function showChatbotDetails(chatbotId) {
           </span>
         </p>
         <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
-        <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
 
         <h5 class="mt-4">📄 Documents</h5>
         <div id="chatbotDocumentsContainer">Loading documents...</div>
+
+        <!-- Upload documents in details page -->
+        <div class="mt-3">
+          <label for="documentFilesDetail" class="form-label">Upload Documents</label>
+          <input type="file" id="documentFilesDetail" class="form-control" multiple
+            onchange="Array.from(this.files).forEach(f => {
+              if(!selectedDetailFiles.some(x => x.name === f.name)) selectedDetailFiles.push(f);
+              renderDetailSelectedFiles();
+            })">
+          <ul id="selectedFilesPreviewDetail" class="list-group mt-2 mb-2"></ul>
+          <button class="btn btn-primary" onclick="uploadDocumentsForDetail(${chatbotId})">Upload</button>
+        </div>
 
         <button class="btn btn-secondary mt-3" onclick="showSection('chatbots')">Back</button>
       </div>
     `;
 
-    // Set up chat bubble to open chat window for this chatbot
     document.getElementById("chatBubble").onclick = () => openChat(chatbotId, data.name);
-
-    // Set current chatbot
     window.currentChatbotId = chatbotId;
 
-    // Load chatbot documents
+    // Load documents
     loadChatbotDocuments(chatbotId);
 
   } catch (err) {
@@ -139,8 +166,13 @@ async function loadChatbotDocuments(chatbotId) {
       <ul class="list-group">
         ${documents.map(doc => `
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            ${doc.title || "Unnamed Document"}
-            <span class="badge bg-primary">${new Date(doc.created_at).toLocaleDateString()}</span>
+            <div>${doc.title || "Unnamed Document"}</div>
+            <div class="text-end">
+              <span class="badge bg-${doc.status === "processing" ? "warning" : doc.status === "active" ? "success" : "secondary"} mb-1">
+                ${doc.status}
+              </span><br>
+              <small class="text-muted">${doc.created_at ? new Date(doc.created_at).toLocaleString() : ""}</small>
+            </div>
           </li>
         `).join("")}
       </ul>
@@ -151,6 +183,7 @@ async function loadChatbotDocuments(chatbotId) {
     console.error(error);
   }
 }
+
 
 /* ===================== SEND MESSAGE ===================== */
 async function sendMessage() {
@@ -186,5 +219,58 @@ async function sendMessage() {
   }
 }
 
-// Initialize chat UI on page load
-// document.addEventListener("DOMContentLoaded", initChatUI);
+// ===================== RENDER SELECTED FILES =====================
+function renderDetailSelectedFiles() {
+  const preview = document.getElementById("selectedFilesPreviewDetail");
+  preview.innerHTML = "";
+
+  selectedDetailFiles.forEach((file, index) => {
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    li.textContent = file.name;
+
+    const btn = document.createElement("button");
+    btn.className = "btn btn-sm btn-danger";
+    btn.textContent = "Remove";
+    btn.addEventListener("click", () => {
+      selectedDetailFiles.splice(index, 1);
+      renderDetailSelectedFiles();
+    });
+
+    li.appendChild(btn);
+    preview.appendChild(li);
+  });
+}
+
+// ===================== UPLOAD DOCUMENTS FOR DETAIL =====================
+async function uploadDocumentsForDetail(chatbotId) {
+  if (!chatbotId) return alert("Invalid chatbot");
+  if (selectedDetailFiles.length === 0) return alert("Select files to upload");
+
+  const formData = new FormData();
+  selectedDetailFiles.forEach(f => formData.append("files", f));
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/chatbots/${chatbotId}/documents`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return alert("Upload failed: " + err);
+    }
+
+    alert("Upload successful");
+
+    selectedDetailFiles = [];
+    document.getElementById("documentFilesDetail").value = "";
+    renderDetailSelectedFiles();
+
+    loadChatbotDocuments(chatbotId); // refresh documents list
+
+  } catch (error) {
+    alert("Upload failed: " + error.message);
+  }
+}

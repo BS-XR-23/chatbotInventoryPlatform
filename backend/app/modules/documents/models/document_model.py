@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from db.database import Base
 from core.enums import DocumentStatus
 
@@ -11,6 +12,7 @@ class Document(Base):
     title = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
     status = Column(Enum(DocumentStatus), default=DocumentStatus.processing)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     chatbot = relationship("Chatbot", back_populates="documents")
 
