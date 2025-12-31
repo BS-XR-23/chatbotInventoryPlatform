@@ -40,14 +40,13 @@ def login_admin_token(
     return {"access_token": access_token, "token_type": "bearer", "role": admin.role}
 
 
-@router.post("/vendor/{vendor_domain}/token", name="Vendor Login")
+@router.post("/vendor/token", name="Vendor Login")
 def login_vendor_token(
-    vendor_domain: str,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     vendor = auth_vendor.authenticate_vendor(
-        db, form_data.username, form_data.password, vendor_domain
+        db, form_data.username, form_data.password
     )
     if not vendor:
         raise HTTPException(
@@ -57,7 +56,7 @@ def login_vendor_token(
         )
 
     access_token = auth_vendor.create_access_token(
-        data={"sub": vendor.email, "domain": vendor.domain}
+        data={"sub": vendor.email}
     )
 
     # Return vendor object along with token

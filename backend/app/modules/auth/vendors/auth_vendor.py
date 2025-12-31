@@ -13,7 +13,7 @@ from core.enums import VendorStatus
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-vendor_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/vendor/{vendor_domain}/token")
+vendor_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/vendor/token")
 
 def get_password_hash(password: str):
     truncated_password = password[:72]
@@ -22,11 +22,11 @@ def get_password_hash(password: str):
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password[:72], hashed_password)
 
-def get_vendor(db: Session, email: str, domain: str):
-    return db.query(Vendor).filter(Vendor.email == email, Vendor.domain == domain).first()
+def get_vendor(db: Session, email: str):
+    return db.query(Vendor).filter(Vendor.email == email).first()
 
-def authenticate_vendor(db: Session, email: str, password: str, domain: str):
-    vendor_obj = get_vendor(db, email, domain)
+def authenticate_vendor(db: Session, email: str, password: str):
+    vendor_obj = get_vendor(db, email)
     if not vendor_obj:
         return False
     if not verify_password(password, vendor_obj.hashed_password):
@@ -48,13 +48,12 @@ def get_current_vendor(token: str = Depends(vendor_oauth2_scheme), db: Session =
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
-        domain: str = payload.get("domain")  # extract vendor domain from token
-        if email is None or domain is None:
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    vendor_obj = get_vendor(db, email=email, domain=domain)
+    vendor_obj = get_vendor(db, email=email)
     if vendor_obj is None:
         raise credentials_exception
     
