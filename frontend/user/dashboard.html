@@ -27,7 +27,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-
             border-top: 4px solid #0d6efd; /* added top border */
         }
 
@@ -54,16 +53,14 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             transition: transform 0.2s;
         }
-        #chatBubble:hover {
-            transform: scale(1.1);
-        }
+        #chatBubble:hover { transform: scale(1.1); }
 
         #chatWindow {
             position: fixed;
             bottom: 90px;
             right: 20px;
-            width: 400px;      /* increased width */
-            max-height: 550px; /* increased height */
+            width: 400px;
+            max-height: 550px;
             background: #f8f9fa;
             border-radius: 10px;
             display: none;
@@ -79,8 +76,8 @@
             color: white;
             padding: 12px;
             font-weight: bold;
-            text-align: left;      
-            position: relative;     
+            text-align: left;
+            position: relative;
         }
 
         #chatHeader button.closeChat {
@@ -161,17 +158,16 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-
-        #sendBtn:hover {
-            background: #0b5ed7;
-        }
+        #sendBtn:hover { background: #0b5ed7; }
 
         /* Chatbot List */
-        #chatbotList { 
-            margin-bottom: 20px; 
-        }
-        #chatbotList li {
-            cursor: pointer;
+        #chatbotList { margin-bottom: 20px; }
+        #chatbotList li { cursor: pointer; }
+
+        /* Vendor Registration */
+        #vendorRegistrationContainer .card { 
+            border: 1px solid #ced4da;
+            padding: 10px;
         }
     </style>
 </head>
@@ -205,8 +201,6 @@
   </div>
 </div>
 
-
-
 <!-- Top Bar -->
 <div class="top-bar">
   <h3>Users</h3>
@@ -225,7 +219,6 @@
   </div>
 </div>
 
-
 <!-- User Info -->
 <div class="mb-3">
     <strong>Name:</strong> <span id="userName"></span> |
@@ -233,6 +226,12 @@
 </div>
 
 <div class="top-bar-offset">
+
+    <!-- Vendor Registration Sidebar Button -->
+    <button class="btn btn-success mb-3" id="openVendorRegistrationBtn">Register with a Vendor</button>
+    <!-- Vendor container -->
+    <div id="vendorRegistrationContainer" style="display:none;"></div>
+
     <!-- Chatbot List -->
     <div class="mb-3">
         <h5>Select Chatbot</h5>

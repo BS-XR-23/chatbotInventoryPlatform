@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from core.config import settings
 from db.database import engine, Base
 from modules.vendors.routers import vendor_router
@@ -29,7 +30,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,6 +47,10 @@ app.include_router(embedding_router.router, prefix="/embeddings", tags=["Embeddi
 app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
 app.include_router(vector_db_router.router, prefix="/vector_dbs", tags=["VectorDBs"])
+
+# Serve static folder
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 
 if __name__ == "__main__":

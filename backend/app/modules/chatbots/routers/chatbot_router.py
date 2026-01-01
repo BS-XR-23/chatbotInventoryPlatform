@@ -49,6 +49,10 @@ def create_chatbot_endpoint(
 def get_vendor_chatbots(db: Session = Depends(get_db),  current_vendor: Vendor = Depends(get_current_vendor)):
     return chatbot_service.get_vendor_chatbots(db, current_vendor.id)
 
+@router.get("/vendor_chatbots_for_user/{vendor_id}", response_model=List[ChatbotRead])
+def get_vendor_chatbots_for_users(vendor_id: int, db: Session = Depends(get_db)):
+    return chatbot_service.get_vendor_chatbots(db, vendor_id)
+
 
 @router.get("/", response_model=List[ChatbotRead])
 def get_chatbots(db: Session = Depends(get_db)):

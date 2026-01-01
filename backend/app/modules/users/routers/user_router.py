@@ -10,6 +10,7 @@ from modules.auth.users import auth_user
 from modules.vendors.models.vendor_model import Vendor
 from modules.chatbots.services import chatbot_service
 from modules.chatbots.schemas.chatbot_schema import ChatbotRead
+from modules.auth.users.auth_user import get_current_user
 
 router = APIRouter(tags=["Users"])
 
@@ -62,3 +63,12 @@ def delete_user(
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
     return {"detail": "User deleted successfully"}
+
+@router.put("/register/{vendor_id}", response_model=UserRead)
+def register_with_vendor(
+    vendor_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return user_service.register_user_with_vendor(db, current_user.id, vendor_id)
+
