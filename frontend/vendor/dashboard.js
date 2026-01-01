@@ -566,9 +566,25 @@ async function loadAnalytics() {
   }
 }
 
+// Function to set active sidebar button
+function setActiveSidebar(button) {
+  // Remove active class from all sidebar buttons
+  document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
+
+  // Add active class to the clicked button
+  button.classList.add('active');
+}
+
 // ---------------- Event Listener ----------------
 analyticsUserSelect.addEventListener("change", loadAnalytics);
 document.addEventListener("DOMContentLoaded", showMainDashboard);
+// ------------------ Sidebar Active State ------------------
+document.querySelectorAll('.sidebar button').forEach(button => {
+  button.addEventListener('click', () => {
+    setActiveSidebar(button);
+  });
+});
+
 
 
 

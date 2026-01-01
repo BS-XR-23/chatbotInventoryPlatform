@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -5,7 +6,7 @@ from modules.users.models.user_model import User
 from modules.users.schemas.user_schema import UserCreate, UserUpdate
 from modules.auth.users import auth_user
 from modules.chatbots.models.chatbot_model import Chatbot
-
+from modules.vendors.models.vendor_model import Vendor
 
 def create_user(db: Session, user_data: UserCreate) -> User:
  
@@ -44,6 +45,22 @@ def update_user(db: Session, user_id: int, user_data: UserUpdate) -> User:
     db.refresh(user)
     return user
 
+def register_user_with_vendor(db: Session, user_id: int, vendor_id: int):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+
+    # Update user's vendor
+    user.vendor_id = vendor_id
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def delete_user(db: Session, user_id: int) -> bool:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -54,3 +71,5 @@ def delete_user(db: Session, user_id: int) -> bool:
 
 def get_vendor_chatbots(db: Session, vendor_id: int) -> List[Chatbot]:
     return db.query(Chatbot).filter(Chatbot.vendor_id == vendor_id).all()
+
+

@@ -78,10 +78,7 @@ def vendor_top_chatbots_by_unique_users(
 ):
     return vendor_service.get_vendor_top_chatbots_by_users(db, current_vendor.id)
 
-
-# ------------------------------
-# Vendor 7-Day Charts
-# ------------------------------
+# ANALYTICS
 
 @router.get("/daily/messages")
 def vendor_daily_messages(
@@ -97,11 +94,6 @@ def vendor_daily_unique_users(
     current_vendor: Vendor = Depends(auth_vendor.get_current_vendor)
 ):
     return vendor_service.get_vendor_daily_unique_users(db, current_vendor.id)
-
-
-# ------------------------------
-# User-Specific Token Usage
-# ------------------------------
 
 @router.get("/user/{user_id}/tokens-last7")
 def vendor_user_tokens_last7(
