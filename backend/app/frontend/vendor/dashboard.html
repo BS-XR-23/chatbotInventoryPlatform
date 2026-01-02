@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vendor Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #e9ecef;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ================= TOP BAR ================= */
+    .top-bar {
+      background-color: #343a40;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .top-bar h3 {
+      color: white;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .top-bar .dropdown-toggle {
+      color: white;
+      border-color: white;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      width: 220px;
+      height: calc(100% - 56px);
+      background-color: #212529;
+      color: white;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 0;
+    }
+
+    .sidebar button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      padding: 10px 12px;
+      background-color: #212529;
+      color: white;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+
+    .sidebar button:hover {
+      background-color: #343a40;
+    }
+
+    /* ================= MAIN CONTENT ================= */
+    .main-content {
+      margin-left: 220px;
+      padding: 80px 20px 20px 20px;
+    }
+
+    /* ================= ANALYTICS ================= */
+    #analyticsSection h4 { color: #343a40; }
+    #userAnalyticsCard { background-color: #ffffff; border: 1px solid #ffffff; margin-bottom: 16px; }
+    .analytics-card { background-color: #ffffff; border-radius: 8px; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); transition: transform 0.2s; }
+    .analytics-card:hover { transform: translateY(-3px); }
+
+    /* ================= TABLES & LISTS ================= */
+    table { background-color: #ffffff; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    table th { background-color: #adb5bd; color: black; }
+    #documentList li { background-color: #ffffff; border-bottom: 1px solid #dee2e6; transition: background-color 0.2s; }
+    #documentList li:hover { background-color: #adb5bd; color: black; }
+    #selectedFilesPreview li { background-color: #ffffff; padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid #dee2e6; }
+
+    /* ================= CHAT BUBBLE ================= */
+    .chat-bubble {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      width: 55px;
+      height: 55px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 3000;
+    }
+
+    /* ================= CHAT WINDOW ================= */
+    .chat-window {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      width: 320px;
+      max-height: 420px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      z-index: 3500;
+      display: none;
+    }
+
+    .chat-header {
+      background: #dc3545;
+      color: white;
+      padding: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #f5f5f5;
+    }
+
+    .chat-message.user {
+      align-self: flex-end;
+      background: #007bff;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 16px;
+      border-bottom-right-radius: 0;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .chat-message.bot {
+      align-self: flex-start;
+      background: #e4e6eb;
+      color: black;
+      padding: 8px 12px;
+      border-radius: 16px;
+      border-bottom-left-radius: 0;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .chat-footer {
+      padding: 10px;
+      border-top: 1px solid #dee2e6;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-footer input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    .chat-footer button {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    .chat-footer button:hover {
+      background: #0056b3;
+    }
+    .sidebar button.active {
+      background-color: #dc3545; /* red to indicate active */
+      font-weight: bold;
+    }
+
+
+    .d-none { display: none !important; }
+  </style>
+</head>
+
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<div class="top-bar">
+  <h3 onclick="showMainDashboard()">Vendor Dashboard</h3>
+  <div class="dropdown">
+    <button class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">Profile</button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li><a class="dropdown-item" href="#" onclick="showProfileForm()">Update Profile</a></li>
+      <li><a class="dropdown-item" href="#" onclick="showChangePasswordModal()">Change Password</a></li>
+      <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sidebar">
+  <button onclick="showMainDashboard()">Analytics</button>
+  <button onclick="loadChatbots()">Chatbots</button>
+  <button onclick="loadDocuments()">Documents</button>
+  <button onclick="loadAPITokens()">API Tokens</button>
+</div>
+
+<!-- ================= MAIN CONTENT ================= -->
+<div class="main-content">
+
+  <!-- Analytics Section -->
+  <div id="analyticsSection">
+    <h4 class="mb-3">Vendor Analytics</h4>
+    <div id="analyticsList" class="d-grid gap-3" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));"></div>
+    <div id="userAnalyticsCard" class="analytics-card card p-3 mt-3" style="max-width: 260px;">
+      <label class="form-label">Select User (optional)</label>
+      <select id="analyticsUserSelect" class="form-select mb-2 form-select-sm">
+        <option value="">All Users</option>
+      </select>
+      <div id="userAnalyticsContent" class="mt-2"><p>Select a user to see their data</p></div>
+    </div>
+  </div>
+
+  <!-- Chatbots Section -->
+  <div id="chatbotsSection" class="d-none">
+    <h4 class="mb-3">Chatbots</h4>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>LLM</th>
+          <th>Vector Store</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="chatbotList"></tbody>
+    </table>
+  </div>
+
+  <!-- Documents Section -->
+  <div id="documentsSection" class="d-none">
+    <h4 class="mb-3">Documents</h4>
+    <div class="card mb-3 p-3">
+      <label class="form-label">Select Chatbot</label>
+      <select id="documentChatbotSelect" class="form-select mb-2"></select>
+      <label class="form-label">Upload Documents</label>
+      <input type="file" class="form-control" multiple onchange="handleDocumentFileSelect(event)">
+      <ul id="selectedFilesPreview" class="mt-2 small text-muted"></ul>
+      <button class="btn btn-danger mt-2" onclick="uploadDocuments()">Upload</button>
+    </div>
+    <ul id="documentList" class="list-group"></ul>
+  </div>
+
+  <!-- API Tokens Section -->
+  <div id="apiTokensSection" class="d-none">
+    <h3>API Tokens</h3>
+
+    <button class="btn btn-primary mb-3" onclick="showCreateApiTokenModal()">Create API Token</button>
+
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Chatbot</th>
+          <th>Vendor Domain</th>
+          <th>Token</th>
+          <th>Status</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody id="apiTokensList">
+        <!-- API keys will be loaded here -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Create API Token Modal -->
+  <div class="modal fade" id="createApiTokenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form class="modal-content" id="createApiTokenForm" onsubmit="submitCreateApiToken(event)">
+        <div class="modal-header">
+          <h5 class="modal-title">Create API Token</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="apiChatbotSelect" class="form-label">Chatbot</label>
+            <select id="apiChatbotSelect" class="form-select" required>
+              <!-- Chatbots will be populated here -->
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="apiVendorDomain" class="form-label">Vendor Domain</label>
+            <input type="text" id="apiVendorDomain" class="form-control" value="" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Create Token</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Profile Section -->
+  <div id="profileSection" class="d-none">
+    <h4 class="mb-3">Update Profile</h4>
+    <div class="mb-2">
+      <label>Name</label>
+      <input id="vendorName" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label>Email</label>
+      <input id="vendorEmail" class="form-control">
+    </div>
+    <div class="mb-2">
+      <label>Domain</label>
+      <input id="vendorDomain" class="form-control">
+    </div>
+    <button class="btn btn-danger" onclick="saveProfile()">Save</button>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label">Current Password</label>
+            <input type="password" id="currentPassword" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">New Password</label>
+            <input type="password" id="newPassword" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label for="confirmNewPassword" class="form-label">Confirm New Password</label>
+            <input type="password" id="confirmNewPassword" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" onclick="submitChangePassword()">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Chatbot Details Section ================= -->
+  <div id="chatbotDetailsSection" class="d-none">
+    <button class="btn btn-secondary mb-3" onclick="loadChatbots()">← Back to Chatbots</button>
+    <div class="card p-3 mb-3">
+      <h4 id="detailsChatbotName"></h4>
+      <p><strong>Status:</strong> <span id="detailsChatbotStatus"></span></p>
+      <p><strong>Created At:</strong> <span id="detailsChatbotCreatedAt"></span></p>
+      <p><strong>Description:</strong> <span id="detailsChatbotDescription"></span></p>
+      <p><strong>System Prompt:</strong></p>
+      <pre id="detailsChatbotSystemPrompt"></pre>
+
+      <!-- ===== NEW Widget Field ===== -->
+      <p><strong>Widget:</strong></p>
+      <pre id="detailsChatbotWidget"></pre>
+
+      <div class="card shadow-sm p-3 mb-3">
+        <h5>📄 Documents</h5>
+        <div id="chatbotDocumentsContainer">Loading documents...</div>
+
+        <!-- Upload Documents in Details Page -->
+        <div class="mt-3">
+          <label for="documentFilesDetail" class="form-label">Upload Documents</label>
+          <input type="file" id="documentFilesDetail" class="form-control" multiple
+            onchange="Array.from(this.files).forEach(f => {
+              if(!selectedDetailFiles.some(x => x.name === f.name)) selectedDetailFiles.push(f);
+              renderDetailSelectedFiles();
+            })">
+          <ul id="selectedFilesPreviewDetail" class="list-group mt-2 mb-2"></ul>
+          <button class="btn btn-primary" onclick="uploadDocumentsForDetail()">Upload</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Bubble -->
+    <div id="chatBubble" class="chat-bubble" onclick="toggleChat()">💬</div>
+
+    <!-- Chat Window -->
+    <div id="chatWindow" class="chat-window">
+      <div class="chat-header">
+        <span id="chatHeaderName">Bot</span>
+        <button class="btn btn-sm btn-light" onclick="closeChat()">✖</button>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/vendor/dashboard.js"></script>
+</body>
+</html>
