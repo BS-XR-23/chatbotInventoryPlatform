@@ -1,5 +1,5 @@
 // ------------------ API & Auth ------------------
-const API_BASE = "http://127.0.0.1:9000"; // change if needed
+// const API_BASE = "http://127.0.0.1:9000"; // change if needed
 const token = localStorage.getItem("access_token");
 // const role = localStorage.getItem("role");
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -372,43 +372,6 @@ function renderConversations(data) {
 //     if (e.key === "Enter") sendMessage();
 // });
 
-// ------------------ Generate API Key ------------------
-async function generateApiKey() {
-    if (!selectedChatbotId) {
-        alert("Select a chatbot first.");
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/api-keys/`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                chatbot_id: selectedChatbotId,
-                key: crypto.randomUUID(),
-                status: "active"
-            })
-        });
-
-        if (!res.ok) {
-            const errData = await res.json();
-            console.error("API key creation error:", errData);
-            throw new Error("Failed to generate API key");
-        }
-
-        const data = await res.json();
-        userApiKey = data.key;
-
-        alert(`API key generated: ${userApiKey}`);
-    } catch (err) {
-        console.error(err);
-        alert("Failed to generate API key");
-    }
-}
-
 // ------------------ Vendor Registration ------------------
 const vendorRegistrationBtn = document.getElementById("openVendorRegistrationBtn");
 const vendorContainer = document.getElementById("vendorRegistrationContainer");
@@ -502,10 +465,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("updateProfileBtn").addEventListener("click", updateProfile);
     document.getElementById("logoutBtn").addEventListener("click", logout);
     document.getElementById("deleteAccountBtn").addEventListener("click", deleteAccount);
-    document.getElementById("generateApiKeyBtn").addEventListener("click", generateApiKey);
     document.getElementById("allConversationsBtn").addEventListener("click", fetchConversations);
 
-    loadChatbots();
+    // loadChatbots();
 
     document.getElementById("allConversationsBtn").addEventListener("click", toggleAllConversations);
 });

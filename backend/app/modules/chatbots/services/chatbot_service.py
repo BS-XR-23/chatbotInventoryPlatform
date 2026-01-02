@@ -14,6 +14,7 @@ from modules.vendors.models.vendor_model import Vendor
 from modules.vector_dbs.models.vector_db_model import VectorDB
 from modules.chatbots.schemas.chatbot_schema import ChatbotCreate, ChatbotUpdate, ChatbotRead
 from modules.rag.services import rag_service
+from modules.api_keys.models.api_model import APIKey
 from modules.chatbots.services import chatbot_service
 from modules.documents.services.document_service import create_documents_bulk, embed_document
 
@@ -174,7 +175,8 @@ def get_latest_vector_db(chatbot: Chatbot) -> Optional[VectorDB]:
 def handle_conversation_singleturn(
     db: Session,
     question: str,
-    chatbot_id: int
+    chatbot_id: int,
+    token: str
 ):
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
@@ -183,6 +185,71 @@ def handle_conversation_singleturn(
 
     if not chatbot:
         raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
+
+    api_token = db.query(APIKey).filter(APIKey.token_hash==token, APIKey.chatbot_id==chatbot.id).first()
+    if not api_token:
+        raise HTTPException(status_code=404, detail="API Key not found or incorrect")    
+
+    llm_obj = chatbot.llm
+    if not llm_obj:
+        raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
+
+    if not chatbot.llm_path:
+        raise HTTPException(status_code=400, detail="Chatbot does not have an LLM path configured")
+
+    if not chatbot.llm_path or chatbot.llm_path.strip() == "":
+        raise HTTPException(status_code=400, detail="Chatbot llm_path is empty or not configured")
+
+    model = ChatOllama(
+        model=chatbot.llm_path.strip(),
+        temperature=0.7,
+    )
+
+    vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
+
+    embedd_obj = db.query(Embedding).filter(
+        Embedding.id == llm_obj.embedding_id
+    ).first()
+
+    if not embedd_obj:
+        raise HTTPException(status_code=404, detail="Embedding not found for this LLM")
+
+    embeddings = OllamaEmbeddings(model=embedd_obj.model_name)
+
+    if vector_db_obj:
+        vectordb = rag_service.load_vectorstore(
+            chatbot.vector_store_type,
+            vector_db_obj.db_path,
+            embeddings
+        )
+        context, _ = rag_service.get_rag_context(question, vectordb)
+    else:
+        context = None
+    system_msg = SystemMessage(
+        content=chatbot.system_prompt or "You are a helpful assistant."
+    )
+
+    final_question = (
+        f"Context:\n{context}\n\nQuestion:\n{question}"
+        if context else question
+    )
+
+    human_msg = HumanMessage(content=final_question)
+    response = model.invoke([system_msg, human_msg])
+    return response.content
+
+def handle_conversation_singleturn_test(
+    db: Session,
+    question: str,
+    chatbot_id: int,
+):
+    chatbot = db.query(Chatbot).filter(
+        Chatbot.id == chatbot_id,
+        Chatbot.is_active == True
+    ).first()
+
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found or inactive") 
 
     llm_obj = chatbot.llm
     if not llm_obj:

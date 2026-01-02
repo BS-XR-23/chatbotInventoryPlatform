@@ -1,4 +1,5 @@
-const API_BASE = "http://127.0.0.1:9000";
+// const API_BASE = "http://127.0.0.1:9000";
+const API_BASE = "";
 const token = localStorage.getItem("access_token");
 const role = localStorage.getItem("role");
 
@@ -1029,7 +1030,7 @@ function setActiveSidebar(button) {
 /* ===================== LOGOUT ===================== */
 function logout() {
   localStorage.clear();
-  window.location.href = "/index.html";
+  window.location.href = "/";
 }
 
 function showAnalytics() {

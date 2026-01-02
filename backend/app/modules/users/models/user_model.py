@@ -15,6 +15,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
     vendor = relationship("Vendor", back_populates="users")
-    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     messages = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
 

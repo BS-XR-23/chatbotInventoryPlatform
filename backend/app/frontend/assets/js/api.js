@@ -1,6 +1,7 @@
 
-const API_BASE = "http://127.0.0.1:9000";
+// const API_BASE = "http://127.0.0.1:9000";
 
+const API_BASE = "";
 export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("access_token");
   const headers = options.headers || {};

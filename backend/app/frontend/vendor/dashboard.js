@@ -1,4 +1,5 @@
-const API_BASE = "http://127.0.0.1:9000";
+// const API_BASE = "http://127.0.0.1:9000";
+const API_BASE = "";
 const token = localStorage.getItem("access_token");
 const currentVendor = JSON.parse(localStorage.getItem("vendor") || "{}");
 const role = localStorage.getItem("role");
@@ -6,6 +7,8 @@ const role = localStorage.getItem("role");
 // ================= GLOBAL FILE STATE =================
 let selectedNewFiles = [];
 let llmMap = {};
+let selectedDetailFiles = [];
+let currentChatbotId = null;
 
 // ------------------ Section Control ------------------
 function showSection(section) {
@@ -13,7 +16,8 @@ function showSection(section) {
   [
     "analyticsSection", 
     "chatbotsSection", 
-    "documentsSection", 
+    "documentsSection",
+    "apiTokensSection", 
     "profileSection",
     "chatbotDetailsSection"
   ].forEach(id => document.getElementById(id).classList.add("d-none"));
@@ -151,11 +155,12 @@ async function loadChatbots() {
   });
 }
 
-// Show chatbot details
+// ------------------ Chatbot Details ------------------
 async function showChatbotDetails(chatbotId) {
+  currentChatbotId = chatbotId; // Save current chatbot globally
   showSection("chatbotDetails");
 
-  // Fetch Chatbot Details
+  // ------------------ Fetch chatbot details ------------------
   const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/vendor`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -167,12 +172,45 @@ async function showChatbotDetails(chatbotId) {
   document.getElementById("detailsChatbotDescription").innerText = data.description || "";
   document.getElementById("detailsChatbotSystemPrompt").innerText = data.system_prompt || "";
 
-  // Chat bubble setup
+  // ------------------ Fetch API token for this chatbot ------------------
+  let tokenHash = "";
+  try {
+    const keysRes = await fetch(`${API_BASE}/api-keys/list_of_keys`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const keysData = await keysRes.json();
+    console.log("API Keys response:", keysData);
+
+    const keys = Array.isArray(keysData) ? keysData : [];
+    const keyForThisChatbot = keys.find(k => k.chatbot_id === chatbotId);
+    if (keyForThisChatbot) {
+      tokenHash = keyForThisChatbot.token_hash;
+    }
+  } catch (err) {
+    console.error("Failed to fetch API token:", err);
+  }
+
+  // ------------------ Widget script (shown as text, not executed) ------------------
+  const widgetScript = `<script 
+    src="https://sort-popularity-manager-idaho.trycloudflare.com/static/widget.js" 
+    data-chatbot="${data.id}" 
+    data-chatbot-name="${data.name}" 
+    data-chatbot-token="${tokenHash}">
+</script>`;
+
+  // Show the script in the description without executing
+  const widgetContainer = document.getElementById("detailsChatbotWidget");
+  widgetContainer.textContent = widgetScript;
+
+  // ------------------ Chat bubble click ------------------
   document.getElementById("chatBubble").onclick = () => openChat(chatbotId, data.name);
 
-  // Fetch & Display Documents
+  // ------------------ Load chatbot documents ------------------
   await loadChatbotDocuments(chatbotId);
 }
+
+
+
 
 async function loadChatbotDocuments(chatbotId) {
   const container = document.getElementById("chatbotDocumentsContainer");
@@ -213,7 +251,6 @@ async function loadChatbotDocuments(chatbotId) {
 
 
 // ------------------ ChatbotsDetails Document Upload ------------------
-let selectedDetailFiles = [];
 
 // Render selected files in details page
 function renderDetailSelectedFiles() {
@@ -238,16 +275,15 @@ function renderDetailSelectedFiles() {
   });
 }
 
-// Upload documents for details page
 async function uploadDocumentsForDetail() {
-  if (!window.activeChatbotId) return alert("No chatbot selected");
+  if (!currentChatbotId) return alert("No chatbot selected"); // >>> CHANGE/ADDED: uses global chatbot ID
   if (selectedDetailFiles.length === 0) return alert("Select files to upload");
 
   const formData = new FormData();
   selectedDetailFiles.forEach(f => formData.append("files", f));
 
   try {
-    const res = await fetch(`${API_BASE}/documents/chatbots/${window.activeChatbotId}/documents`, {
+    const res = await fetch(`${API_BASE}/documents/chatbots/${currentChatbotId}/documents`, { // >>> CHANGE/ADDED
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData
@@ -262,14 +298,12 @@ async function uploadDocumentsForDetail() {
     selectedDetailFiles = [];
     document.getElementById("documentFilesDetail").value = "";
     renderDetailSelectedFiles();
-
-    // Refresh documents list
-    loadChatbotDocuments(window.activeChatbotId);
-
+    loadChatbotDocuments(currentChatbotId); // >>> CHANGE/ADDED
   } catch (err) {
     alert("Upload failed: " + err.message);
   }
 }
+
 
 
 
@@ -282,8 +316,7 @@ function openChat(chatbotId, chatbotName) {
   document.getElementById("chatHeaderName").innerText = chatbotName;
   document.getElementById("chatMessages").innerHTML = "";
   document.getElementById("chatInput").value = "";
-
-  window.currentChatbotId = chatbotId;
+  currentChatbotId = chatbotId; // >>> CHANGE/ADDED
 }
 
 // Close Chat
@@ -303,7 +336,7 @@ async function sendMessage() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
   try {
-    const res = await fetch(`${API_BASE}/chatbots/${window.currentChatbotId}/ask`, {
+    const res = await fetch(`${API_BASE}/chatbots/${currentChatbotId}/test_chatbot`, { // >>> CHANGE/ADDED uses global chatbot ID
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -313,12 +346,10 @@ async function sendMessage() {
     });
 
     if (!res.ok) throw new Error("Failed to get response from chatbot");
-
     const data = await res.json();
 
     chatMessages.innerHTML += `<div class="chat-message bot">${data.answer}</div>`;
     chatMessages.scrollTop = chatMessages.scrollHeight;
-
   } catch (err) {
     chatMessages.innerHTML += `<div class="chat-message bot">Error: ${err.message}</div>`;
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -476,6 +507,148 @@ async function deleteDocument(id, btn) {
   btn.closest("li").remove();
 }
 
+// ------------------ API Tokens ------------------
+async function loadAPITokens() {
+  showSection("apiTokens"); // Show the API Tokens section
+
+  const container = document.getElementById("apiTokensList");
+  container.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+  try {
+    // Fetch API keys for this vendor
+    const res = await fetch(`${API_BASE}/api-keys/list_of_keys`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const keys = await res.json();
+
+    if (!keys.length) {
+      container.innerHTML = "<tr><td colspan='5'>No API tokens found</td></tr>";
+      return;
+    }
+
+    // Fetch all chatbots to map chatbot_id -> chatbot name
+    const botsRes = await fetch(`${API_BASE}/chatbots/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const bots = await botsRes.json();
+    const chatbotMap = {};
+    bots.forEach(b => chatbotMap[b.id] = b.name);
+
+    // Render table rows
+    container.innerHTML = keys.map(k => `
+      <tr>
+        <td>${chatbotMap[k.chatbot_id] || "N/A"}</td>
+        <td>${k.vendor_domain}</td>
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${k.token_hash}" readonly>
+          <button 
+            class="btn btn-sm btn-outline-primary mt-1" 
+            onclick="
+              const btn = this;
+              navigator.clipboard.writeText('${k.token_hash}').then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied';
+                setTimeout(() => btn.textContent = original, 1500);
+              });
+            "
+          >
+            Copy
+          </button>
+        </td>
+        <td>${k.status}</td>
+        <td>${new Date(k.created_at).toLocaleString()}</td>
+      </tr>
+    `).join("");
+
+    // Add copy functionality to all buttons
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<tr><td colspan='5' style='color:red;'>Failed to load API tokens</td></tr>";
+  }
+}
+
+// Show the modal and populate chatbot dropdown
+async function showCreateApiTokenModal() {
+  // Fetch chatbots for this vendor
+  const select = document.getElementById("apiChatbotSelect");
+  select.innerHTML = "<option value=''>Loading...</option>";
+
+  try {
+    const res = await fetch(`${API_BASE}/chatbots/`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const bots = await res.json();
+
+    select.innerHTML = ""; // clear
+
+    bots.forEach(b => {
+      const option = document.createElement("option");
+      option.value = b.id;
+      option.textContent = b.name;
+      select.appendChild(option);
+    });
+
+    // Set vendor domain field
+    document.getElementById("apiVendorDomain").value = currentVendor.domain || "";
+
+    // Show modal
+    const modalEl = document.getElementById("createApiTokenModal");
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+  } catch (err) {
+    alert("Failed to load chatbots: " + err.message);
+  }
+}
+
+// Submit form to create API token
+async function submitCreateApiToken(event) {
+  event.preventDefault();
+
+  const chatbotId = parseInt(document.getElementById("apiChatbotSelect").value);
+  const vendorDomain = document.getElementById("apiVendorDomain").value.trim();
+
+  if (!chatbotId || !vendorDomain) return alert("Fill all fields");
+
+  // Include vendor_id from the current logged-in vendor
+  const payload = {
+    vendor_id: currentVendor.id,  // << Added this
+    chatbot_id: chatbotId,
+    vendor_domain: vendorDomain
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/api-keys/create_api_key`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` 
+      },
+      body: JSON.stringify(payload) // << send complete payload
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || JSON.stringify(errData));
+    }
+
+    const data = await res.json();
+    alert(`API Token created!\nToken: ${data.token}`);
+
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById("createApiTokenModal")).hide();
+
+    // Reload API tokens table
+    loadAPITokens();
+
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+}
+
+
+
 // ------------------ Analytics ------------------
 async function loadVendorUsers() {
   analyticsUserSelect.innerHTML = `<option value="">All Users</option>`;
@@ -526,7 +699,6 @@ async function loadAnalytics() {
   } else {
     userContent.innerHTML = `<p>Select a user to see token stats</p>`;
   }
-
   // ---------------- All-users Analytics Cards ----------------
   const endpoints = [
     ["Top Chatbots by Messages", "/vendors/top-chatbots/messages", ["Chatbot", "Messages"], ["chatbot_name", "message_count"]],

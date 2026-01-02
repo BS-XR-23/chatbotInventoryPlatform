@@ -124,16 +124,34 @@ def delete_chatbot(chatbot_id: int, db: Session = Depends(get_db), current_admin
         raise HTTPException(status_code=404, detail="Chatbot not found")
     return {"detail": "Chatbot deleted successfully"}
 
-@router.post("/{chatbot_id}/ask", response_model=ChatResponse)
+@router.post("/{chatbot_id}/{token}/ask", response_model=ChatResponse)
 def chatbot_interaction_user_singleturn(
     chatbot_id: int,
+    token: str,
     request: ChatRequest,
     db: Session = Depends(get_db),
 ):
     ai_reply = chatbot_service.handle_conversation_singleturn(
         db=db,
         question=request.question,
-        chatbot_id=chatbot_id
+        chatbot_id=chatbot_id,
+        token=token
+    )
+    return ChatResponse(
+    answer=ai_reply.content if hasattr(ai_reply, "content") else str(ai_reply),
+    session_id=None
+    )
+
+@router.post("/{chatbot_id}/test_chatbot", response_model=ChatResponse)
+def chatbot_interaction_user_singleturn(
+    chatbot_id: int,
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+):
+    ai_reply = chatbot_service.handle_conversation_singleturn_test(
+        db=db,
+        question=request.question,
+        chatbot_id=chatbot_id,
     )
     return ChatResponse(
     answer=ai_reply.content if hasattr(ai_reply, "content") else str(ai_reply),

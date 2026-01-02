@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 from core.config import settings
 from db.database import engine, Base
 from modules.vendors.routers import vendor_router
@@ -36,6 +38,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+
 app.include_router(user_router.router, prefix="/users", tags=["Users"])
 app.include_router(vendor_router.router, prefix="/vendors", tags=["Vendors"])
 app.include_router(api_router.router, prefix="/api-keys", tags=["API Keys"])
@@ -49,9 +54,40 @@ app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
 app.include_router(vector_db_router.router, prefix="/vector_dbs", tags=["VectorDBs"])
 
 # Serve static folder
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
+# ---------------- Root Pages ----------------
+@app.get("/")
+async def index():
+    return FileResponse(FRONTEND_DIR / "index.html", media_type="text/html")
+
+@app.get("/signup")
+async def signup():
+    return FileResponse(FRONTEND_DIR / "signup.html", media_type="text/html")
+
+# ---------------- Dashboards ----------------
+@app.get("/admin/dashboard.html")
+async def admin_dashboard():
+    return FileResponse(
+        FRONTEND_DIR / "admin/dashboard.html",
+        media_type="text/html"
+    )
+
+@app.get("/vendor/dashboard.html")
+async def vendor_dashboard():
+    return FileResponse(
+        FRONTEND_DIR / "vendor/dashboard.html",
+        media_type="text/html"
+    )
+
+@app.get("/user/dashboard.html")
+async def user_dashboard():
+    return FileResponse(
+        FRONTEND_DIR / "user/dashboard.html",
+        media_type="text/html"
+    )
 
 if __name__ == "__main__":
     import uvicorn

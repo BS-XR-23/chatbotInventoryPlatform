@@ -197,7 +197,7 @@ async function sendMessage() {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
   try {
-    const res = await fetch(`${API_BASE}/chatbots/${window.currentChatbotId}/ask`, {
+    const res = await fetch(`${API_BASE}/chatbots/${window.currentChatbotId}/test_chatbot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

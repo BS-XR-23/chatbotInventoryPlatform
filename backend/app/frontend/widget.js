@@ -1,31 +1,15 @@
-// ------------------ Chat Bubble Functionality ------------------
-// const chatBubble = document.getElementById("chatBubble");
-// const chatWindow = document.getElementById("chatWindow");
-// const chatHeader = document.getElementById("chatHeader");
-// const chatMessages = document.getElementById("chatMessages");
-// const chatInput = document.getElementById("chatInput");
-// const sendBtn = document.getElementById("sendBtn");
+// const API_BASE = "http://127.0.0.1:9000"; 
 
-const API_BASE = "http://127.0.0.1:9000"; // change if needed
-
+const API_BASE = "https://sort-popularity-manager-idaho.trycloudflare.com"
 // Get chatbot ID from the script tag
 const scriptTag = document.currentScript;
 const selectedChatbotId = scriptTag.getAttribute("data-chatbot");
 const selectedChatbotName = scriptTag.getAttribute("data-chatbot-name") || "Chatbot";
+const selectedChatbottoken = scriptTag.getAttribute("data-chatbot-token");
 
 // Default chatbot name (optional until fetched)
 let chatSessionId = null;
 let userApiKey = null;
-
-
-
-
-// // Track selected chatbot and session
-// let chatSessionId = null;
-// let selectedChatbotId = null;
-// let currentChatbotMode = null;
-// let userApiKey = null; // API key for private chatbots
-// let selectedChatbotName = "Chatbot"; // store chatbot name for header
 
 // ------------------ Load Chatbots ------------------
 async function loadChatbots() {
@@ -110,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     display:flex; justify-content:space-between; align-items:center;
                 ">${selectedChatbotName} <button id="chatCloseBtn">✖</button></div>
 
-            <div id="chatMessages" style="flex:1; padding:10px; overflow-y:auto; background:#f7f7f7;"></div>
+            <div id="chatMessages" style="flex:1; padding:10px; overflow-y:auto; background:#f7f7f7; display:flex; flex-direction: column;"></div>
 
             <div style="display:flex; gap:5px; padding:10px;">
                 <input id="chatInput" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;" placeholder="Type...">
@@ -176,6 +160,7 @@ async function sendMessage() {
     userMsgDiv.style.padding = "8px 12px";
     userMsgDiv.style.borderRadius = "20px 0 20px 20px"; 
     userMsgDiv.style.marginBottom = "8px";
+    userMsgDiv.style.maxWidth = "80%";
     userMsgDiv.innerHTML = `<strong>User:</strong> ${message}`;
     userMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
 
@@ -187,7 +172,7 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/ask`, {
+        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/${selectedChatbottoken}/ask`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question: message })
@@ -204,8 +189,11 @@ async function sendMessage() {
         botMsgDiv.style.background = "#e9ecef";          
         botMsgDiv.style.color = "#212529";               
         botMsgDiv.style.padding = "8px 12px";
+        botMsgDiv.style.display = "flex"; 
         botMsgDiv.style.borderRadius = "0 20px 20px 20px"; 
         botMsgDiv.style.marginBottom = "8px";
+        botMsgDiv.style.flexDirection= "column";
+        botMsgDiv.style.maxWidth = "80%";
         botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;  // <-- always "Bot"
         botMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
 
@@ -221,12 +209,4 @@ async function sendMessage() {
         chatInput.focus();
     }
 }
-
-
-
-// Send message events
-// sendBtn.addEventListener("click", sendMessage);
-// chatInput.addEventListener("keypress", (e) => {
-//     if (e.key === "Enter") sendMessage();
-// });
 
