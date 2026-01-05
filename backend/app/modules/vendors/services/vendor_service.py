@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
 from modules.users.models.user_model import User
+from modules.messages.models.messages_model import Message
 
 def create_vendor(db: Session, vendor_data: VendorCreate) -> Vendor:
     db_vendor = db.query(Vendor).filter(Vendor.email == vendor_data.email).first()
@@ -151,12 +152,12 @@ def get_vendor_daily_message_count(db: Session, vendor_id: int):
         db.query(
             Chatbot.id.label("chatbot_id"),
             Chatbot.name.label("chatbot_name"),
-            func.date(Conversation.timestamp).label("day"),
+            func.date(Conversation.created_at).label("day"),
             func.count(Conversation.id).label("messages")
         )
         .join(Conversation, Conversation.chatbot_id == Chatbot.id)
         .filter(Chatbot.vendor_id == vendor_id)
-        .group_by(Chatbot.id, func.date(Conversation.timestamp))
+        .group_by(Chatbot.id, func.date(Conversation.created_at))
         .order_by("day")
         .all()
     )
@@ -176,12 +177,12 @@ def get_vendor_daily_unique_users(db: Session, vendor_id: int):
         db.query(
             Chatbot.id.label("chatbot_id"),
             Chatbot.name.label("chatbot_name"),
-            func.date(Conversation.timestamp).label("day"),
+            func.date(Conversation.created_at).label("day"),
             func.count(func.distinct(Conversation.user_id)).label("unique_users")
         )
         .join(Conversation, Conversation.chatbot_id == Chatbot.id)
         .filter(Chatbot.vendor_id == vendor_id)
-        .group_by(Chatbot.id, func.date(Conversation.timestamp))
+        .group_by(Chatbot.id, func.date(Conversation.created_at))
         .order_by("day")
         .all()
     )
@@ -217,8 +218,8 @@ def get_user_tokens_last_7_days_for_vendor(db: Session, vendor_id: int, user_id:
 #  USER: LIFETIME TOKENS (Vendor-Scoped)
 def get_user_total_tokens_for_vendor(db: Session, vendor_id: int, user_id: int):
     total = (
-        db.query(func.coalesce(func.sum(Conversation.token_count), 0))
-        .join(Chatbot, Conversation.chatbot_id == Chatbot.id)
+        db.query(func.coalesce(func.sum(Message.token_count), 0))
+        .join(Chatbot, Message.chatbot_id == Chatbot.id)
         .filter(
             Chatbot.vendor_id == vendor_id,
             Conversation.user_id == user_id
