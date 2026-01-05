@@ -7,6 +7,7 @@ from modules.auth.admins import auth_admin
 from modules.admins.models.admin_model import Admin
 from modules.admins.schemas.admin_schema import AdminCreate, AdminUpdate
 from modules.users.models.user_model import User
+from modules.messages.models.messages_model import Message
 from modules.chatbots.models.chatbot_model import Chatbot
 from modules.conversations.models.conversation_model import Conversation
   
@@ -112,11 +113,19 @@ def get_most_used_chatbot(db: Session):
     return {"chatbot": chatbot, "vendor": vendor, "usage_count": result.usage_count}
 
 def get_total_tokens_by_vendor(db: Session, vendor_id: int):
-    total_tokens = db.query(func.sum(Conversation.token_count)) \
-                     .join(Chatbot, Chatbot.id == Conversation.chatbot_id) \
-                     .filter(Chatbot.vendor_id == vendor_id) \
-                     .scalar()
+    total_tokens = (
+        db.query(func.sum(Message.token_count))
+        .join(Conversation, Conversation.id == Message.conversation_id)  
+        .join(Chatbot, Chatbot.id == Conversation.chatbot_id)        
+        .filter(Chatbot.vendor_id == vendor_id)
+        .scalar()
+    )
+
     if total_tokens is None:
         raise HTTPException(status_code=404, detail="No tokens found for this vendor")
+    
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
     return {"vendor": vendor, "total_tokens": total_tokens}

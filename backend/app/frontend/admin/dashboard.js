@@ -499,7 +499,7 @@ async function loadTotalTokensAnalytics() {
   const vendorId = document.getElementById("vendorSelectAnalytics").value;
   if (!vendorId) return;
 
-  const res = await fetch(`${API_BASE}/concersations/total-tokens/${vendorId}`, { headers });
+  const res = await fetch(`${API_BASE}/conversations/total-tokens/${vendorId}`, { headers });
   const data = await res.json();
 
   const totalTokens = data?.total_tokens;
@@ -811,12 +811,12 @@ async function loadLLMs() {
 
       li.innerHTML = `
         <div>
-          <strong>${l.name}</strong> (${l.status})<br>
+          <strong>${l.name}</strong>
           <small class="text-muted">Provider: ${l.provider} | Embedding: ${l.embedding?.model_name || "None"}</small>
         </div>
         <div class="d-flex flex-column gap-1">
           <button class="btn btn-sm btn-warning-solid"
-            onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}', '${l.status}')">
+            onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}')">
             Update
           </button>
           <button class="btn btn-sm btn-danger-solid"
@@ -845,7 +845,7 @@ async function openAddLLMModal() {
   modal.show();
 }
 
-function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, context_limit, path, status) {
+function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, context_limit, path) {
   const modal = new bootstrap.Modal(document.getElementById("llmModal"));
   document.getElementById("llmModalTitle").innerText = "Update LLM";
 
@@ -855,7 +855,6 @@ function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, conte
   document.getElementById("llmTokenLimit").value = token_limit;
   document.getElementById("llmContextLimit").value = context_limit;
   document.getElementById("llmPath").value = path || "";
-  document.getElementById("llmStatus").value = status;
 
   populateEmbeddingDropdown(globalEmbeddings, embedding_id);
   modal.show();
@@ -882,7 +881,6 @@ async function submitLLMForm(event) {
   const token_limit = document.getElementById("llmTokenLimit").value;
   const context_limit = document.getElementById("llmContextLimit").value;
   const path = document.getElementById("llmPath").value;
-  const status = document.getElementById("llmStatus").value;
 
   const payload = {
     name,
@@ -890,8 +888,7 @@ async function submitLLMForm(event) {
     embedding_id: Number(embedding_id),
     def_token_limit: Number(token_limit),
     def_context_limit: Number(context_limit),
-    path: path || undefined,
-    status
+    path: path || undefined
   };
 
   if (id) {

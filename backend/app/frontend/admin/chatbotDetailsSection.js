@@ -40,9 +40,6 @@ function showSection(section) {
 
   // Load dynamic content depending on section
   switch(section) {
-    case "dashboard":
-      loadAnalytics();
-      break;
     case "chatbots":
       loadChatbots();
       break;
@@ -83,9 +80,11 @@ function closeChat() {
 
 // ===================== SHOW CHATBOT DETAILS =====================
 async function showChatbotDetails(chatbotId) {
+  // Show the chatbot details section
   showSection("chatbotDetails");
 
   try {
+    // Fetch chatbot details from API
     const res = await fetch(`${API_BASE}/chatbots/role-based-stats/${chatbotId}/${role}`, { headers });
     if (!res.ok) {
       const err = await res.json();
@@ -93,27 +92,41 @@ async function showChatbotDetails(chatbotId) {
     }
     const data = await res.json();
 
+    // Store active chatbot info globally
     window.activeChatbotId = chatbotId;
     window.activeChatbotName = data.name;
+    window.currentChatbotId = chatbotId;
 
+    // Build the details container HTML
     const container = document.getElementById("chatbotDetailsContainer");
     container.innerHTML = `
       <div class="card shadow-sm p-3 mb-3">
         <h3 class="card-title">${data.name}</h3>
         <p><strong>Vendor:</strong> ${data.vendor?.name || "N/A"}</p>
-        <p><strong>Description:</strong> ${data.description || "N/A"}</p>
-        <p><strong>System Prompt:</strong>
-          <pre class="text-muted">${data.system_prompt || "N/A"}</pre>
-        </p>
-        <p><strong>LLM:</strong> ${data.llm?.name || "N/A"}</p>
         <p><strong>Status:</strong>
           <span class="badge bg-${data.is_active ? "success" : "secondary"}">
             ${data.is_active ? "Active" : "Inactive"}
           </span>
         </p>
-        <p><strong>Vector Store Type:</strong> ${data.vector_store_type || "N/A"}</p>
+        <p><strong>Created At:</strong> ${new Date(data.created_at).toLocaleString()}</p>
+        <p><strong>Description:</strong> ${data.description || "N/A"}</p>
+        <p><strong>System Prompt:</strong></p>
+        <div class="border p-2 mb-3">${data.system_prompt || "<em>N/A</em>"}</div>
 
-        <h5 class="mt-4">📄 Documents</h5>
+        <!-- Widget Snippet Section -->
+        <h5 class="mt-4">🔌 Widget</h5>
+        <div class="border p-3 mb-3" style="background-color: #1e1e1e;">
+          <p><strong class="text-light">Widget Embed Code:</strong></p>
+          <div class="d-flex align-items-start gap-2">
+            <pre class="p-2 rounded flex-grow-1" id="widgetCodeContainer" style="background-color: #1e1e1e; color: #ffffff; white-space: pre-wrap;"></pre>
+            <button class="btn btn-sm btn-outline-light" id="copyWidgetBtn">Copy</button>
+          </div>
+          <small class="text-light">Click "Copy" to copy the snippet to clipboard</small>
+        </div>
+
+
+        <!-- Documents Section (last) -->
+        <h5>📄 Documents</h5>
         <div id="chatbotDocumentsContainer">Loading documents...</div>
 
         <!-- Upload documents in details page -->
@@ -132,17 +145,38 @@ async function showChatbotDetails(chatbotId) {
       </div>
     `;
 
+    // Set chat bubble click to open chatbot
     document.getElementById("chatBubble").onclick = () => openChat(chatbotId, data.name);
-    window.currentChatbotId = chatbotId;
 
-    // Load documents
+    // Load documents for this chatbot
     loadChatbotDocuments(chatbotId);
+
+    // Prepare the widget snippet as text (not executed)
+    const widgetSnippet = `
+      <script 
+        src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com/static/widget.js" 
+        data-chatbot="${chatbotId}" 
+        data-chatbot-name="${data.name}" 
+        data-chatbot-token="${data.widget_token || 'YOUR_DEFAULT_TOKEN'}">
+      </script>
+      `;
+    // Show snippet in <pre>
+    document.getElementById("widgetCodeContainer").textContent = widgetSnippet.trim();
+
+    // Copy button functionality
+    document.getElementById("copyWidgetBtn").onclick = () => {
+      navigator.clipboard.writeText(widgetSnippet.trim())
+        .then(() => alert("Widget snippet copied to clipboard!"))
+        .catch(err => alert("Failed to copy snippet: " + err));
+    };
 
   } catch (err) {
     console.error(err);
     alert("Failed to load chatbot details.");
   }
 }
+
+
 
 /* ===================== LOAD CHATBOT DOCUMENTS ===================== */
 async function loadChatbotDocuments(chatbotId) {
@@ -199,7 +233,7 @@ async function sendMessage() {
   // --- Display user message ---
   const userMsgDiv = document.createElement("div");
   userMsgDiv.classList.add("chat-message", "user");
-  userMsgDiv.innerHTML = `<strong>User:</strong> ${message}`;
+  userMsgDiv.innerHTML = `${message}`;
   chatMessages.appendChild(userMsgDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -232,7 +266,7 @@ async function sendMessage() {
     // --- Display bot response ---
     const botMsgDiv = document.createElement("div");
     botMsgDiv.classList.add("chat-message", "bot");
-    botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;
+    botMsgDiv.innerHTML = `${data.answer}`;
     chatMessages.appendChild(botMsgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
