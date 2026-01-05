@@ -1,6 +1,6 @@
 // const API_BASE = "http://127.0.0.1:9000"; 
 
-const API_BASE = "https://sort-popularity-manager-idaho.trycloudflare.com"
+const API_BASE = "https://mhz-sarah-enjoy-citysearch.trycloudflare.com"
 // Get chatbot ID from the script tag
 const scriptTag = document.currentScript;
 const selectedChatbotId = scriptTag.getAttribute("data-chatbot");
@@ -141,6 +141,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+let sessionId = null; 
+
 // ------------------ Send Message ------------------
 async function sendMessage() {
     if (!selectedChatbotId) {
@@ -151,7 +153,6 @@ async function sendMessage() {
     const message = chatInput.value.trim();
     if (!message) return;
 
-    // --- Add user message ---
     const userMsgDiv = document.createElement("div");
     userMsgDiv.classList.add("message", "user");
     userMsgDiv.style.alignSelf = "flex-end";            
@@ -172,17 +173,24 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/${selectedChatbottoken}/ask`, {
+        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: message })
+            body: JSON.stringify({ 
+                question: message,
+                session_id: sessionId  // send existing sessionId or null
+            })
         });
 
         if (!res.ok) throw new Error("Chat request failed");
 
         const data = await res.json();
 
-        // --- Add bot message ---
+        // Save sessionId from backend response if not already set
+        if (!sessionId && data.session_id) {
+            sessionId = data.session_id;
+        }
+
         const botMsgDiv = document.createElement("div");
         botMsgDiv.classList.add("message", "chatbot");
         botMsgDiv.style.alignSelf = "flex-start";        
@@ -194,7 +202,7 @@ async function sendMessage() {
         botMsgDiv.style.marginBottom = "8px";
         botMsgDiv.style.flexDirection= "column";
         botMsgDiv.style.maxWidth = "80%";
-        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;  // <-- always "Bot"
+        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;
         botMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
 
         chatMessages.appendChild(botMsgDiv);
@@ -209,4 +217,5 @@ async function sendMessage() {
         chatInput.focus();
     }
 }
+
 

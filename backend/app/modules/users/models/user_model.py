@@ -15,5 +15,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
     vendor = relationship("Vendor", back_populates="users")
-    messages = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
 
