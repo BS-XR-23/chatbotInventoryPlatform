@@ -24,7 +24,7 @@ class Chatbot(Base):
     vendor = relationship("Vendor", back_populates="chatbots")
     llm = relationship("LLM", back_populates="chatbots")
     documents = relationship("Document", back_populates="chatbot", cascade="all, delete-orphan")
-    messages = relationship("Conversation", back_populates="chatbot", cascade="all, delete-orphan")
+    conversations = relationship("Conversation", back_populates="chatbot", cascade="all, delete-orphan")
     api_keys = relationship("APIKey", back_populates="chatbot", cascade="all, delete-orphan")
     vector_dbs = relationship("VectorDB", back_populates="chatbot", cascade="all, delete-orphan")
 

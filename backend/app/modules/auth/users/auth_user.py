@@ -13,6 +13,10 @@ from modules.users.models.user_model import User
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 user_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/user/token")
 
+user_oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="auth/user/token",
+    auto_error=False 
+)
 
 def get_password_hash(password: str):
     truncated_password = password[:72]  
@@ -60,4 +64,24 @@ def get_current_user(token: str = Depends(user_oauth2_scheme), db: Session = Dep
     user_obj = get_user(db, email=email)
     if user_obj is None:
         raise credentials_exception
+    return user_obj
+
+def get_current_user_optional(
+    token: str | None = Depends(user_oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> User | None:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str | None = payload.get("sub")
+        if email is None:
+            return None
+    except JWTError:
+        return None
+
+    user_obj = get_user(db, email=email)
+    if user_obj is None:
+        return None
+
     return user_obj

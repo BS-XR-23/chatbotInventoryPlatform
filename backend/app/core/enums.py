@@ -14,6 +14,7 @@ class SenderType(str, enum.Enum):
     vendor = "vendor"
     external = "external"
     chatbot = "chatbot"
+    admin = "admin"
 
 class VendorStatus(str, enum.Enum):
     active = "active"

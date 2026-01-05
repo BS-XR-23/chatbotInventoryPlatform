@@ -12,7 +12,7 @@ from modules.users.models.user_model import User
 from core.enums import VectorStoreType, UserRole
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.admins.auth_admin import get_current_admin
-from modules.auth.users.auth_user import get_current_user
+from modules.auth.users.auth_user import get_current_user, get_current_user_optional
 
 
 router = APIRouter(tags=["Chatbots"])
@@ -163,7 +163,7 @@ def chatbot_interaction_multiturn(
     chatbot_id: int,
     request: ChatRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User | None = Depends(get_current_user_optional), 
 ):
     session_id = request.session_id or str(uuid4())
 
@@ -172,13 +172,14 @@ def chatbot_interaction_multiturn(
         question=request.question,
         chatbot_id=chatbot_id,
         session_id=session_id,
-        user_id=current_user.id,
+        user=current_user,  
     )
 
     return ChatResponse(
         answer=ai_text,
         session_id=session_id
     )
+
 
 #  GLOBAL PUBLIC ANALYTICS
 @router.get("/global/top-chatbots")
