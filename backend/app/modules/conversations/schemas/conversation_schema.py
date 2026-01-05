@@ -1,26 +1,19 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
-from core.enums import SenderType
 
 class ConversationBase(BaseModel):
     session_id: str
-    sender_type: SenderType
-    content: str
+    chatbot_id: int
     user_id: Optional[int] = None
-    chatbot_id: Optional[int] = None
-    token_count: int = 0
-    timestamp: datetime
+    is_active: Optional[bool] = True  # <-- new field
 
 class ConversationCreate(ConversationBase):
     pass
 
-class ConversationUpdate(BaseModel):
-    content: Optional[str] = None
-    token_count: Optional[int] = None
-
 class ConversationRead(ConversationBase):
     id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
-

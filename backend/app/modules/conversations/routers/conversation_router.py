@@ -5,6 +5,9 @@ from db.database import get_db
 from modules.conversations.schemas.conversation_schema import ConversationCreate, ConversationRead
 from modules.conversations.services import conversation_service
 from modules.users.models.user_model import User
+from modules.admins.models.admin_model import Admin
+from modules.admins.services import admin_service
+from modules.auth.admins import auth_admin
 from modules.auth.users.auth_user import get_current_user
 
 router = APIRouter(tags=["Conversations"])
@@ -29,6 +32,9 @@ def delete_conversation(conversation_id: int, db: Session = Depends(get_db), cur
         raise HTTPException(status_code=404, detail="Conversation not found")
     return {"detail": "Conversation deleted successfully"}
 
+@router.get("/total-tokens/{vendor_id}")
+def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
+    return admin_service.get_total_tokens_by_vendor(db, vendor_id)
 
 
 

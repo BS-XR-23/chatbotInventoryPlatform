@@ -60,7 +60,7 @@ async function signup() {
   }
 
   try {
-    const res = await fetch("http://127.0.0.1:9000/users/create", {
+    const res = await fetch("https://mhz-sarah-enjoy-citysearch.trycloudflare.com /users/create", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload)
