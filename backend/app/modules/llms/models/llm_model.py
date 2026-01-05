@@ -17,7 +17,6 @@ class LLM(Base):
     def_context_limit = Column(Integer, nullable=False)
 
     path = Column(String, nullable=True)
-    status = Column(String, default="active")
 
     chatbots = relationship("Chatbot", back_populates="llm")
     embedding = relationship("Embedding", back_populates="llms")

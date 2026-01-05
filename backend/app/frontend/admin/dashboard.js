@@ -403,28 +403,52 @@ async function loadVendors() {
   globalVendors = vendors; // save globally for modal use
 
   // ---------------------------
-  // Populate vendor list (for vendor card)
+  // Populate vendor list (for vendor table)
   // ---------------------------
   const vendorListEl = document.getElementById("vendorList");
-  vendorListEl.innerHTML = "";
+  vendorListEl.innerHTML = ""; // clear first
+
+  // Build table dynamically inside JS
+  const table = document.createElement("table");
+  table.className = "table table-striped table-hover";
+
+  // Table header
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Vendor</th>
+        <th>Users</th>
+        <th>Chatbots</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="vendorListBody"></tbody>
+  `;
+
+  vendorListEl.appendChild(table);
+
+  const tbody = document.getElementById("vendorListBody");
 
   vendors.forEach(v => {
-    vendorListEl.innerHTML += `
-      <li class="list-group-item d-flex justify-content-between align-items-start">
-        <div>
-          <div><strong>${v.name}</strong></div>
-          <div class="text-muted small">
-            Users: ${v.user_count || 0} | Chatbots: ${v.chatbot_count || 0}
-          </div>
-        </div>
-        <div class="d-flex flex-column align-items-end gap-2">
-          <span class="badge bg-secondary">${v.status || 'N/A'}</span>
-          <button class="btn btn-sm btn-warning-solid"
-            onclick="updateVendorStatus(${v.id})">
-            Update Status
-          </button>
-        </div>
-      </li>`;
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${v.name}</td>
+      <td>${v.user_count || 0}</td>
+      <td>${v.chatbot_count || 0}</td>
+      <td><span class="badge bg-secondary">${v.status || 'N/A'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-warning-solid me-1" onclick="updateVendorStatus(${v.id})">
+          Update Status
+        </button>
+        <button class="btn btn-sm btn-danger-solid" onclick="deleteVendor(${v.id})">
+          Delete
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
   });
 
   // ---------------------------
@@ -439,10 +463,8 @@ async function loadVendors() {
     analyticsSelect.appendChild(option);
   });
 
-  // Load total tokens on change
   analyticsSelect.onchange = loadTotalTokensAnalytics;
 
-  // Load for first vendor by default
   if (vendors.length > 0) {
     analyticsSelect.value = vendors[0].id;
     loadTotalTokensAnalytics();
@@ -495,11 +517,12 @@ async function loadVendors() {
   // }
 }
 
+
 async function loadTotalTokensAnalytics() {
   const vendorId = document.getElementById("vendorSelectAnalytics").value;
   if (!vendorId) return;
 
-  const res = await fetch(`${API_BASE}/concersations/total-tokens/${vendorId}`, { headers });
+  const res = await fetch(`${API_BASE}/conversations/total-tokens/${vendorId}`, { headers });
   const data = await res.json();
 
   const totalTokens = data?.total_tokens;
@@ -693,28 +716,47 @@ function renderSelectedFiles() {
 }
 
 /* ===================== EMBEDDINGS ===================== */
+/* ===================== Embeddings ===================== */
 async function loadEmbeddings() {
-  const list = document.getElementById("embeddingList");
-  list.innerHTML = "<li class='list-group-item'>Loading...</li>";
+  const container = document.getElementById("embeddingList");
+  container.innerHTML = "Loading...";
 
   try {
     const res = await fetch(`${API_BASE}/embeddings/`, { headers });
     const embeds = await res.json();
     globalEmbeddings = embeds;
 
-    list.innerHTML = "";
+    if (!embeds.length) {
+      container.innerHTML = "<p class='text-muted'>No embeddings found.</p>";
+      return;
+    }
+
+    // Create table
+    const table = document.createElement("table");
+    table.className = "table table-striped table-hover";
+
+    // Table header
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Model Name</th>
+          <th>Provider</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+
+    const tbody = table.querySelector("tbody");
 
     embeds.forEach(e => {
-      const li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      const tr = document.createElement("tr");
 
-      li.innerHTML = `
-        <div>
-          <strong>${e.model_name}</strong><br>
-          <small class="text-muted">${e.provider}</small>
-        </div>
-        <div class="d-flex flex-column gap-1">
-          <button class="btn btn-sm btn-warning-solid"
+      tr.innerHTML = `
+        <td>${e.model_name}</td>
+        <td>${e.provider}</td>
+        <td>
+          <button class="btn btn-sm btn-warning-solid me-1"
             onclick="openUpdateEmbeddingModal(${e.id}, '${e.model_name.replace(/'/g,"\\'")}', '${e.provider.replace(/'/g,"\\'")}', '${e.path?.replace(/'/g,"\\'") || ""}')">
             Update
           </button>
@@ -722,16 +764,21 @@ async function loadEmbeddings() {
             onclick="deleteEmbedding(${e.id})">
             Delete
           </button>
-        </div>
+        </td>
       `;
 
-      list.appendChild(li);
+      tbody.appendChild(tr);
     });
+
+    container.innerHTML = "";
+    container.appendChild(table);
+
   } catch (err) {
     console.error(err);
-    list.innerHTML = "<li class='list-group-item text-danger'>Failed to load embeddings</li>";
+    container.innerHTML = "<p class='text-danger'>Failed to load embeddings</p>";
   }
 }
+
 
 
 function openAddEmbeddingModal() {
@@ -791,9 +838,10 @@ async function deleteEmbedding(id) {
 }
 
 /* ===================== LLMs ===================== */
+/* ===================== LLMs ===================== */
 async function loadLLMs() {
-  const list = document.getElementById("llmList");
-  list.innerHTML = "<li class='list-group-item'>Loading...</li>";
+  const container = document.getElementById("llmList");
+  container.innerHTML = "Loading...";
 
   try {
     const res = await fetch(`${API_BASE}/llms/`, { headers });
@@ -803,36 +851,61 @@ async function loadLLMs() {
     const embedRes = await fetch(`${API_BASE}/embeddings/`, { headers });
     globalEmbeddings = await embedRes.json();
 
-    list.innerHTML = "";
+    if (!llms.length) {
+      container.innerHTML = "<p class='text-muted'>No LLMs found.</p>";
+      return;
+    }
+
+    // Create table
+    const table = document.createElement("table");
+    table.className = "table table-striped table-hover";
+
+    // Table header
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Model Name</th>
+          <th>Provider</th>
+          <th>Embedding Model</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+
+    const tbody = table.querySelector("tbody");
 
     llms.forEach(l => {
-      const li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center";
+      const tr = document.createElement("tr");
 
-      li.innerHTML = `
-        <div>
-          <strong>${l.name}</strong> (${l.status})<br>
-          <small class="text-muted">Provider: ${l.provider} | Embedding: ${l.embedding?.model_name || "None"}</small>
-        </div>
-        <div class="d-flex flex-column gap-1">
-          <button class="btn btn-sm btn-warning-solid"
-            onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}', '${l.status}')">
+      tr.innerHTML = `
+        <td>${l.name}</td>
+        <td>${l.provider}</td>
+        <td>${l.embedding?.model_name || "None"}</td>
+        <td>
+          <button class="btn btn-sm btn-warning-solid me-1"
+            onclick="openUpdateLLMModal(${l.id}, '${l.name.replace(/'/g,"\\'")}', '${l.provider.replace(/'/g,"\\'")}', ${l.embedding_id}, ${l.def_token_limit}, ${l.def_context_limit}, '${(l.path||"").replace(/'/g,"\\'")}')">
             Update
           </button>
           <button class="btn btn-sm btn-danger-solid"
             onclick="deleteLLM(${l.id})">
             Delete
           </button>
-        </div>
+        </td>
       `;
 
-      list.appendChild(li);
+      tbody.appendChild(tr);
     });
+
+    container.innerHTML = "";
+    container.appendChild(table);
+
   } catch (err) {
     console.error(err);
-    list.innerHTML = "<li class='list-group-item text-danger'>Failed to load LLMs</li>";
+    container.innerHTML = "<p class='text-danger'>Failed to load LLMs</p>";
   }
 }
+
 
 
 async function openAddLLMModal() {
@@ -845,7 +918,7 @@ async function openAddLLMModal() {
   modal.show();
 }
 
-function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, context_limit, path, status) {
+function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, context_limit, path) {
   const modal = new bootstrap.Modal(document.getElementById("llmModal"));
   document.getElementById("llmModalTitle").innerText = "Update LLM";
 
@@ -855,7 +928,6 @@ function openUpdateLLMModal(id, name, provider, embedding_id, token_limit, conte
   document.getElementById("llmTokenLimit").value = token_limit;
   document.getElementById("llmContextLimit").value = context_limit;
   document.getElementById("llmPath").value = path || "";
-  document.getElementById("llmStatus").value = status;
 
   populateEmbeddingDropdown(globalEmbeddings, embedding_id);
   modal.show();
@@ -882,7 +954,6 @@ async function submitLLMForm(event) {
   const token_limit = document.getElementById("llmTokenLimit").value;
   const context_limit = document.getElementById("llmContextLimit").value;
   const path = document.getElementById("llmPath").value;
-  const status = document.getElementById("llmStatus").value;
 
   const payload = {
     name,
@@ -890,8 +961,7 @@ async function submitLLMForm(event) {
     embedding_id: Number(embedding_id),
     def_token_limit: Number(token_limit),
     def_context_limit: Number(context_limit),
-    path: path || undefined,
-    status
+    path: path || undefined
   };
 
   if (id) {

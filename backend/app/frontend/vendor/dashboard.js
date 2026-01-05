@@ -191,17 +191,42 @@ async function showChatbotDetails(chatbotId) {
   }
 
   // ------------------ Widget script (shown as text, not executed) ------------------
-  const widgetScript = 
-  `<script 
-    src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com /static/widget.js" 
+  const widgetScript = `<script 
+    src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com/static/widget.js" 
     data-chatbot="${data.id}" 
     data-chatbot-name="${data.name}" 
     data-chatbot-token="${tokenHash}">
   </script>`;
 
-  // Show the script in the description without executing
+  // Show the script in the <pre> without executing
   const widgetContainer = document.getElementById("detailsChatbotWidget");
   widgetContainer.textContent = widgetScript;
+
+  // ------------------ Style the widget container for black background & white text ------------------
+  const widgetWrapper = document.getElementById("detailsChatbotWidgetContainer");
+  widgetWrapper.style.backgroundColor = "#1e1e1e";
+  widgetWrapper.style.position = "relative";
+  widgetContainer.style.color = "#ffffff";
+  widgetContainer.style.whiteSpace = "pre-wrap";
+  widgetContainer.style.marginTop = "35px"; // leaves space for copy button
+
+  // ------------------ Add Copy Button at top-right ------------------
+  let copyBtn = document.getElementById("copyWidgetBtn");
+  if (!copyBtn) {
+    copyBtn = document.createElement("button");
+    copyBtn.id = "copyWidgetBtn";
+    copyBtn.innerText = "Copy";
+    copyBtn.className = "btn btn-sm btn-outline-light position-absolute";
+    copyBtn.style.top = "10px";
+    copyBtn.style.right = "10px";
+    widgetWrapper.appendChild(copyBtn);
+  }
+
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(widgetScript)
+      .then(() => alert("Widget snippet copied to clipboard!"))
+      .catch(err => alert("Failed to copy snippet: " + err));
+  };
 
   // ------------------ Chat bubble click ------------------
   document.getElementById("chatBubble").onclick = () => openChat(chatbotId, data.name);
@@ -209,8 +234,6 @@ async function showChatbotDetails(chatbotId) {
   // ------------------ Load chatbot documents ------------------
   await loadChatbotDocuments(chatbotId);
 }
-
-
 
 
 async function loadChatbotDocuments(chatbotId) {
