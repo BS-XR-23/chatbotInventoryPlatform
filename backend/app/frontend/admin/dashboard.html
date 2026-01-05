@@ -99,8 +99,9 @@
       position: fixed;
       bottom: 90px;
       right: 20px;
-      width: 320px;
-      max-height: 420px;
+      width: 360px;        /* optional: slightly wider */
+      height: 520px;       /* 👈 initial visible height */
+      max-height: 70vh;    /* responsive safety */
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.25);
@@ -110,6 +111,7 @@
       z-index: 3500;
       display: none;
     }
+
     /* Header */
     .chat-header {
       background: #dc3545;
@@ -236,7 +238,7 @@
 
   <!-- ================= TOP BAR ================= -->
   <div class="top-bar">
-    <h3 onclick="showAnalytics()">Admin Dashboard</h3>
+    <h3 onclick="showSection('dashboard')">Admin Dashboard</h3>
     <div class="dropdown">
       <button class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown">
         Profile
@@ -252,7 +254,7 @@
 
   <!-- ================= SIDEBAR ================= -->
   <div class="sidebar">
-    <button class="btn btn-dark" onclick="showAnalytics()">Analytics</button>
+    <button class="btn btn-dark" onclick="showSection('dashboard')">Analytics</button>
     <button class="btn btn-dark" onclick="showSection('chatbots')">Chatbots</button>
     <button class="btn btn-dark" onclick="showSection('vendors')">Vendors</button>
     <button class="btn btn-dark" onclick="showSection('documents')">Documents</button>
@@ -264,7 +266,7 @@
   <div class="content">
 
     <!-- Dashboard / Analytics Section -->
-    <div id="dashboard" class="section">
+    <div id="dashboard" class="section d-none">
       <h4>Admin Dashboard</h4>
 
       <!-- Top Analytics Cards -->
@@ -599,13 +601,6 @@
           <div class="mb-3">
             <label class="form-label">Path</label>
             <input type="text" class="form-control" id="llmPath">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Status</label>
-            <select id="llmStatus" class="form-select">
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
         </div>
         <div class="modal-footer">

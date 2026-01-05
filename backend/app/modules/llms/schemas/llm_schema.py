@@ -1,4 +1,3 @@
-# modules/llms/llm_schema.py
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from modules.embeddings.schemas.embedding_schema import EmbeddingRead
@@ -11,7 +10,6 @@ class LLMBase(BaseModel):
     def_token_limit: int
     def_context_limit: int
     path: Optional[str] = None
-    status: Optional[str] = "active"
 
 
 class LLMCreate(LLMBase):
@@ -25,7 +23,6 @@ class LLMUpdate(BaseModel):
     def_token_limit: Optional[int] = None
     def_context_limit: Optional[int] = None
     path: Optional[str] = None
-    status: Optional[str] = None
 
 
 class LLMRead(LLMBase):

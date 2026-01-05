@@ -115,8 +115,9 @@
       position: fixed;
       bottom: 90px;
       right: 20px;
-      width: 320px;
-      max-height: 420px;
+      width: 360px;        /* optional: slightly wider */
+      height: 520px;       /* 👈 initial visible height */
+      max-height: 70vh;    /* responsive safety */
       background: #fff;
       border-radius: 16px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.25);
@@ -388,9 +389,19 @@
       <p><strong>System Prompt:</strong></p>
       <pre id="detailsChatbotSystemPrompt"></pre>
 
-      <!-- ===== NEW Widget Field ===== -->
-      <p><strong>Widget:</strong></p>
-      <pre id="detailsChatbotWidget"></pre>
+      <!-- Widget Snippet Section -->
+      <h5 class="mt-4">🔌 Widget</h5>
+      <div id="detailsChatbotWidgetContainer" class="p-3 mb-3 rounded position-relative" 
+          style="background-color: #1e1e1e;">
+        <pre id="detailsChatbotWidget" class="mb-2" 
+            style="color: #ffffff; white-space: pre-wrap; margin-top: 35px;"></pre>
+        <small class="text-light d-block mt-1">
+          Click "Copy" to copy the snippet to clipboard
+        </small>
+      </div>
+
+
+
 
       <div class="card shadow-sm p-3 mb-3">
         <h5>📄 Documents</h5>
