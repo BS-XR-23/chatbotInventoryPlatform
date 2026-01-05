@@ -38,21 +38,14 @@ async function loadChatbots() {
             const li = document.createElement("li");
             li.className = "list-group-item d-flex justify-content-between align-items-center";
             li.innerHTML = `
-                <span>${cb.name} <small>(${cb.mode})</small></span>
+                <span>${cb.name}</span>
                 <button class="btn btn-sm btn-primary">Select</button>
             `;
             li.querySelector("button").addEventListener("click", () => {
                 selectedChatbotId = cb.id;
                 selectedChatbotName = cb.name;
-                currentChatbotMode = cb.mode;
                 chatSessionId = null;
                 userApiKey = null;
-
-                if (cb.mode === "private") {
-                    alert("This is a private chatbot. Generate API key from profile to chat.");
-                } else {
-                    alert(`Selected chatbot: ${cb.name}`);
-                }
 
                 updateChatHeader();
             });
@@ -149,6 +142,10 @@ async function sendMessage() {
         alert("Chatbot ID missing from widget script tag!");
         return;
     }
+    if (!selectedChatbottoken) {
+        alert("Chatbot token missing from widget script tag!");
+        return;
+    }
 
     const message = chatInput.value.trim();
     if (!message) return;
@@ -162,7 +159,7 @@ async function sendMessage() {
     userMsgDiv.style.borderRadius = "20px 0 20px 20px"; 
     userMsgDiv.style.marginBottom = "8px";
     userMsgDiv.style.maxWidth = "80%";
-    userMsgDiv.innerHTML = `<strong>User:</strong> ${message}`;
+    userMsgDiv.innerHTML = `${message}`;
     userMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
 
     chatMessages.appendChild(userMsgDiv);
@@ -173,7 +170,7 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/chat`, {
+        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/${selectedChatbottoken}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -202,7 +199,7 @@ async function sendMessage() {
         botMsgDiv.style.marginBottom = "8px";
         botMsgDiv.style.flexDirection= "column";
         botMsgDiv.style.maxWidth = "80%";
-        botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;
+        botMsgDiv.innerHTML = `${data.answer}`;
         botMsgDiv.setAttribute("data-time", new Date().toLocaleTimeString());
 
         chatMessages.appendChild(botMsgDiv);

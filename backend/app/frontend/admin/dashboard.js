@@ -499,7 +499,7 @@ async function loadTotalTokensAnalytics() {
   const vendorId = document.getElementById("vendorSelectAnalytics").value;
   if (!vendorId) return;
 
-  const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
+  const res = await fetch(`${API_BASE}/concersations/total-tokens/${vendorId}`, { headers });
   const data = await res.json();
 
   const totalTokens = data?.total_tokens;
@@ -528,7 +528,7 @@ async function loadTotalTokens() {
   if (!vendorId) return;
 
   try {
-    const res = await fetch(`${API_BASE}/admins/total-tokens/${vendorId}`, { headers });
+    const res = await fetch(`${API_BASE}/conversations/total-tokens/${vendorId}`, { headers });
     const data = await res.json();
 
     // Put total tokens in the analytics card (not inside vendor list)
