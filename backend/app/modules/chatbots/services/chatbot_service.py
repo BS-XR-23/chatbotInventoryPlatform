@@ -1,5 +1,6 @@
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain.messages import HumanMessage, AIMessage, SystemMessage
@@ -242,18 +243,25 @@ def handle_conversation_singleturn(
     response = model.invoke([system_msg, human_msg])
     return response.content
 
-def handle_conversation_singleturn_test(
+def handle_conversation_multiturn(
     db: Session,
     question: str,
     chatbot_id: int,
+    session_id: str,
+    token: str,
+    user: User | None = None
 ):
+    # --- Fetch chatbot and LLM ---
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
         Chatbot.is_active == True
     ).first()
-
     if not chatbot:
-        raise HTTPException(status_code=404, detail="Chatbot not found or inactive") 
+        raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
+
+    api_token = db.query(APIKey).filter(APIKey.token_hash==token, APIKey.chatbot_id==chatbot.id).first()
+    if not api_token:
+        raise HTTPException(status_code=404, detail="API Key not found or incorrect")    
 
     llm_obj = chatbot.llm
     if not llm_obj:
@@ -265,66 +273,7 @@ def handle_conversation_singleturn_test(
     if not chatbot.llm_path or chatbot.llm_path.strip() == "":
         raise HTTPException(status_code=400, detail="Chatbot llm_path is empty or not configured")
 
-    model = ChatOllama(
-        model=chatbot.llm_path.strip(),
-        temperature=0.7,
-    )
-
-    vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
-
-    embedd_obj = db.query(Embedding).filter(
-        Embedding.id == llm_obj.embedding_id
-    ).first()
-
-    if not embedd_obj:
-        raise HTTPException(status_code=404, detail="Embedding not found for this LLM")
-
-    embeddings = OllamaEmbeddings(model=embedd_obj.model_name)
-
-    if vector_db_obj:
-        vectordb = rag_service.load_vectorstore(
-            chatbot.vector_store_type,
-            vector_db_obj.db_path,
-            embeddings
-        )
-        context, _ = rag_service.get_rag_context(question, vectordb)
-    else:
-        context = None
-    system_msg = SystemMessage(
-        content=chatbot.system_prompt or "You are a helpful assistant."
-    )
-
-    final_question = (
-        f"Context:\n{context}\n\nQuestion:\n{question}"
-        if context else question
-    )
-
-    human_msg = HumanMessage(content=final_question)
-    response = model.invoke([system_msg, human_msg])
-    return response.content
-
-def handle_conversation_multiturn(
-    db: Session,
-    question: str,
-    chatbot_id: int,
-    session_id: str,
-    user: User | None = None  # pass the User object (optional)
-):
-    chatbot = db.query(Chatbot).filter(
-        Chatbot.id == chatbot_id,
-        Chatbot.is_active == True
-    ).first()
-
-    if not chatbot:
-        raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
-
-    llm_obj = chatbot.llm
-    if not llm_obj:
-        raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
-
-    if not chatbot.llm_path or not chatbot.llm_path.strip():
-        raise HTTPException(status_code=400, detail="Chatbot LLM path not configured")
-
+    # --- Fetch or create conversation ---
     conversation = (
         db.query(Conversation)
         .filter(
@@ -334,67 +283,87 @@ def handle_conversation_multiturn(
         .first()
     )
 
-    if not conversation:
+    if conversation is None:
         conversation = Conversation(
             session_id=session_id,
             chatbot_id=chatbot_id,
-            user_id=user.id if user else None
+            user_id=user.id if user else None,
+            is_active=True  # mark new conversation as active
         )
         db.add(conversation)
-        db.commit()
-        db.refresh(conversation)
+        try:
+            db.commit()
+            db.refresh(conversation)
+        except IntegrityError:
+            db.rollback()
+            conversation = (
+                db.query(Conversation)
+                .filter(
+                    Conversation.session_id == session_id,
+                    Conversation.chatbot_id == chatbot_id
+                )
+                .first()
+            )
+            if conversation is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create or fetch conversation"
+                )
+            db.refresh(conversation)
 
-    history = (
-        db.query(Message)
-        .filter(Message.conversation_id == conversation.id)
-        .order_by(Message.created_at.asc())
-        .all()
-    )
+    # --- Check for "bye" message ---
+    if question.strip().lower() in ("bye", "goodbye", "see you"):
+        conversation.is_active = False
+        db.commit()
+        return "It was nice chatting with you. Goodbye!"
+
+    # --- Fetch conversation history only if active ---
+    history = []
+    if conversation.is_active:
+        history = (
+            db.query(Message)
+            .filter(Message.conversation_id == conversation.id)
+            .order_by(Message.created_at.asc())
+            .all()
+        )
 
     messages = [
-        SystemMessage(
-            content=chatbot.system_prompt or "You are a helpful assistant."
-        )
+        SystemMessage(content=chatbot.system_prompt or "You are a helpful assistant.")
     ]
 
     for msg in history:
-        llm_msg = mesasges_service.map_sender_to_llm_message(msg.sender_type, msg.content)
-        if llm_msg:
-            messages.append(llm_msg)
+        if msg.sender_type in (SenderType.external, SenderType.vendor, SenderType.admin):
+            messages.append(HumanMessage(content=msg.content))
+        else: 
+            messages.append(AIMessage(content=msg.content))
 
-    embedd_obj = db.query(Embedding).filter(
-        Embedding.id == llm_obj.embedding_id
-    ).first()
-
-    embeddings = OllamaEmbeddings(model=embedd_obj.model_name)
+    embedd_obj = db.query(Embedding).filter(Embedding.id == llm_obj.embedding_id).first()
+    embeddings = OllamaEmbeddings(model=embedd_obj.model_name) if embedd_obj else None
 
     vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
-    if vector_db_obj:
+    if vector_db_obj and embeddings:
         vectordb = rag_service.load_vectorstore(
             chatbot.vector_store_type,
             vector_db_obj.db_path,
             embeddings
         )
         context, _ = rag_service.get_rag_context(question, vectordb)
-        final_question = f"Context:\n{context}\n\nQuestion:\n{question}"
     else:
-        final_question = question
+        context = None
 
+    final_question = (
+        f"Context:\n{context}\n\nQuestion:\n{question}"
+        if context else question
+    )
     messages.append(HumanMessage(content=final_question))
 
-    model = ChatOllama(
-        model=chatbot.llm_path.strip(),
-        temperature=0.7,
-    )
-
+    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.7)
     response = model.invoke(messages)
     ai_text = response.content
 
-    sender_type = mesasges_service.get_sender_type_from_user(user)
-
     db.add(Message(
         conversation_id=conversation.id,
-        sender_type=sender_type,
+        sender_type=SenderType.external if not user else SenderType(user.role.value),
         content=question,
         token_count=len(question.split())
     ))
@@ -410,6 +379,137 @@ def handle_conversation_multiturn(
 
     return ai_text
 
+def test_handle_conversation_multiturn(
+    db: Session,
+    question: str,
+    chatbot_id: int,
+    session_id: str,
+    user: User | None = None
+):
+
+    chatbot = db.query(Chatbot).filter(
+        Chatbot.id == chatbot_id,
+        Chatbot.is_active == True
+    ).first()
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
+
+    llm_obj = chatbot.llm
+    if not llm_obj:
+        raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
+
+    if not chatbot.llm_path or not chatbot.llm_path.strip():
+        raise HTTPException(status_code=400, detail="Chatbot LLM path not configured")
+
+    # --- Fetch or create conversation ---
+    conversation = (
+        db.query(Conversation)
+        .filter(
+            Conversation.session_id == session_id,
+            Conversation.chatbot_id == chatbot_id
+        )
+        .first()
+    )
+
+    if conversation is None:
+        conversation = Conversation(
+            session_id=session_id,
+            chatbot_id=chatbot_id,
+            user_id=user.id if user else None,
+            is_active=True  # mark new conversation as active
+        )
+        db.add(conversation)
+        try:
+            db.commit()
+            db.refresh(conversation)
+        except IntegrityError:
+            db.rollback()
+            conversation = (
+                db.query(Conversation)
+                .filter(
+                    Conversation.session_id == session_id,
+                    Conversation.chatbot_id == chatbot_id
+                )
+                .first()
+            )
+            if conversation is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create or fetch conversation"
+                )
+            db.refresh(conversation)
+
+    # --- Check for "bye" message ---
+    if question.strip().lower() in ("bye", "goodbye", "see you"):
+        conversation.is_active = False
+        db.commit()
+        return "It was nice chatting with you. Goodbye!"
+
+    # --- Fetch conversation history only if active ---
+    history = []
+    if conversation.is_active:
+        history = (
+            db.query(Message)
+            .filter(Message.conversation_id == conversation.id)
+            .order_by(Message.created_at.asc())
+            .all()
+        )
+
+    messages = [
+        SystemMessage(content=chatbot.system_prompt or "You are a helpful assistant.")
+    ]
+
+    for msg in history:
+        if msg.sender_type in (SenderType.external, SenderType.vendor, SenderType.admin):
+            messages.append(HumanMessage(content=msg.content))
+        else:  # chatbot messages
+            messages.append(AIMessage(content=msg.content))
+
+    # --- Prepare embeddings and context if RAG is used ---
+    embedd_obj = db.query(Embedding).filter(Embedding.id == llm_obj.embedding_id).first()
+    embeddings = OllamaEmbeddings(model=embedd_obj.model_name) if embedd_obj else None
+
+    vector_db_obj = chatbot_service.get_latest_vector_db(chatbot)
+    if vector_db_obj and embeddings:
+        vectordb = rag_service.load_vectorstore(
+            chatbot.vector_store_type,
+            vector_db_obj.db_path,
+            embeddings
+        )
+        context, _ = rag_service.get_rag_context(question, vectordb)
+    else:
+        context = None
+
+    final_question = (
+        f"Context:\n{context}\n\nQuestion:\n{question}"
+        if context else question
+    )
+    messages.append(HumanMessage(content=final_question))
+
+    # --- Call the LLM ---
+    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.7)
+    response = model.invoke(messages)
+    ai_text = response.content
+
+    # --- Save user message ---
+    db.add(Message(
+        conversation_id=conversation.id,
+        sender_type=SenderType.external if not user else SenderType(user.role.value),
+        content=question,
+        token_count=len(question.split())
+    ))
+
+    # --- Save bot message ---
+    db.add(Message(
+        conversation_id=conversation.id,
+        sender_type=SenderType.chatbot,
+        content=ai_text,
+        token_count=len(ai_text.split())
+    ))
+
+    db.commit()
+
+    return ai_text
 
 
 #  GLOBAL TOP CHATBOTS (Public Analytics)

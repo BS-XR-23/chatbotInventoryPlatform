@@ -48,7 +48,7 @@ async function showMainDashboard() {
 // ------------------ Logout ------------------
 function logout() {
   localStorage.clear();
-  window.location.href = "/index.html";
+  window.location.href = "/";
 }
 
 function showProfileForm() {
@@ -191,12 +191,13 @@ async function showChatbotDetails(chatbotId) {
   }
 
   // ------------------ Widget script (shown as text, not executed) ------------------
-  const widgetScript = `<script 
-    src="https://sort-popularity-manager-idaho.trycloudflare.com/static/widget.js" 
+  const widgetScript = 
+  `<script 
+    src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com /static/widget.js" 
     data-chatbot="${data.id}" 
     data-chatbot-name="${data.name}" 
     data-chatbot-token="${tokenHash}">
-</script>`;
+  </script>`;
 
   // Show the script in the description without executing
   const widgetContainer = document.getElementById("detailsChatbotWidget");
@@ -325,36 +326,67 @@ function closeChat() {
 }
 
 // Send Message
+let sessionId = null; // store session_id for multi-turn conversation
+
 async function sendMessage() {
   const input = document.getElementById("chatInput");
   const message = input.value.trim();
   if (!message) return;
 
   const chatMessages = document.getElementById("chatMessages");
-  chatMessages.innerHTML += `<div class="chat-message user">${message}</div>`;
-  input.value = "";
+
+  // --- Display user message ---
+  const userMsgDiv = document.createElement("div");
+  userMsgDiv.classList.add("chat-message", "user");
+  userMsgDiv.innerHTML = `<strong>User:</strong> ${message}`;
+  chatMessages.appendChild(userMsgDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  input.value = "";
+  input.disabled = true;
+
   try {
-    const res = await fetch(`${API_BASE}/chatbots/${currentChatbotId}/test_chatbot`, { // >>> CHANGE/ADDED uses global chatbot ID
+    // Build request body
+    const body = { question: message };
+    if (sessionId) body.session_id = sessionId;
+
+    // Send request to multi-turn backend
+    const res = await fetch(`${API_BASE}/chatbots/${currentChatbotId}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        // Optional: only send token if logged in
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
-      body: JSON.stringify({ question: message })
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) throw new Error("Failed to get response from chatbot");
     const data = await res.json();
 
-    chatMessages.innerHTML += `<div class="chat-message bot">${data.answer}</div>`;
+    // --- Save session_id for next messages ---
+    if (!sessionId && data.session_id) {
+      sessionId = data.session_id;
+    }
+    // --- Display bot response ---
+    const botMsgDiv = document.createElement("div");
+    botMsgDiv.classList.add("chat-message", "bot");
+    botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;
+    chatMessages.appendChild(botMsgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
   } catch (err) {
-    chatMessages.innerHTML += `<div class="chat-message bot">Error: ${err.message}</div>`;
+    const errDiv = document.createElement("div");
+    errDiv.classList.add("chat-message", "bot");
+    errDiv.innerHTML = `<strong>Bot:</strong> Error: ${err.message}`;
+    chatMessages.appendChild(errDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  } finally {
+    input.disabled = false;
+    input.focus();
   }
 }
+
 
 // ------------------ Documents ------------------
 async function loadDocuments() {
