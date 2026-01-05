@@ -144,7 +144,3 @@ def count_unique_sessions(db : Session = Depends(get_db), current_admin: Admin =
 @router.get("/top-chatbot")
 def top_chatbot(db : Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)) -> str:
     return chatbot_service.top_performing_chatbot_name(db)
-
-@router.get("/total-tokens/{vendor_id}")
-def total_tokens(vendor_id: int, db: Session = Depends(get_db), current_admin: Admin = Depends(auth_admin.get_current_admin)):
-    return admin_service.get_total_tokens_by_vendor(db, vendor_id)
