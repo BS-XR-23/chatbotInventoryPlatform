@@ -204,6 +204,98 @@
 
 
     .d-none { display: none !important; }
+
+    /* ================= MODERN ANALYTICS CARDS ================= */
+    .analytics-card {
+      border-radius: 14px;
+      padding: 18px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(0,0,0,0.05));
+    }
+
+    /* Smooth lift on hover */
+    .analytics-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+    }
+
+    /* Card colors (light versions) - keep your logic */
+    .card-blue { background: #4dabf7; }
+    .card-purple { background: #845ef7; }
+    .card-green { background: #51cf66; }
+    .card-cyan { background: #22b8cf; }
+
+    /* Tables inside cards */
+    .analytics-card table {
+      background: rgba(255,255,255,0.08);
+      border-collapse: separate;  /* allows spacing between rows */
+      border-spacing: 0 6px;      /* vertical spacing between rows */
+      border-radius: 10px;
+      color: white;
+      width: 100%;
+    }
+
+    /* Table headers */
+    .analytics-card table th {
+      background: rgba(255,255,255,0.25);
+      color: white;
+      font-weight: 600;
+      padding: 10px 12px;
+      border: none;
+      text-align: left;
+      border-radius: 6px 6px 0 0;
+    }
+
+    /* Table body cells */
+    .analytics-card table tbody td {
+      padding: 10px 12px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05); /* subtle row background */
+      transition: background 0.25s;
+    }
+
+    /* Rounded edges for first and last cells */
+    .analytics-card table tbody td:first-child {
+      border-top-left-radius: 6px;
+      border-bottom-left-radius: 6px;
+    }
+    .analytics-card table tbody td:last-child {
+      border-top-right-radius: 6px;
+      border-bottom-right-radius: 6px;
+    }
+
+    /* Row hover effect */
+    .analytics-card table tbody tr:hover td {
+      background: rgba(255,255,255,0.12);
+    }
+
+    /* Optional striped effect */
+    .analytics-card table tbody tr:nth-child(odd) td {
+      background: rgba(255,255,255,0.04);
+    }
+    .analytics-card table tbody tr:nth-child(even) td {
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* User Analytics Card (optional, for select user) */
+    #userAnalyticsCard {
+      background: #f8f9fa;
+      color: #212529;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      padding: 16px;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    #userAnalyticsCard:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
   </style>
 </head>
 

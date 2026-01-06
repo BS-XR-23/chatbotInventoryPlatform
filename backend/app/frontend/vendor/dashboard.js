@@ -729,24 +729,25 @@ async function loadAnalytics() {
     userContent.innerHTML = "";
 
     const userEndpoints = [
-      ["Tokens Last 7 Days", `/vendors/user/${userId}/tokens-last7`, "tokens_last_7_days"],
-      ["Total Tokens", `/vendors/user/${userId}/tokens-total`, "total_tokens"]
+      ["Tokens Last 7 Days", `/vendors/user/${userId}/tokens-last7`, "tokens_last_7_days", "card-blue"],
+      ["Total Tokens", `/vendors/user/${userId}/tokens-total`, "total_tokens", "card-purple"]
     ];
 
-    for (let [title, url, key] of userEndpoints) {
+    for (let [title, url, key, colorClass] of userEndpoints) {
       const card = document.createElement("div");
-      card.className = "analytics-card card p-3 shadow-sm mb-2";
+      card.className = `analytics-card ${colorClass}`;
 
       try {
         const res = await fetch(API_BASE + url, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
-
-        // Extract the number from response
         const value = (typeof data === "number") ? data : data[key] ?? 0;
 
-        card.innerHTML = `<h6>${title}</h6><p class="fs-4 mt-2">${value}</p>`;
+        card.innerHTML = `
+          <h6>${title}</h6>
+          <p class="fs-4 mt-2">${value}</p>
+        `;
       } catch {
-        card.innerHTML = `<h6>${title}</h6><p class="text-danger">Failed to load data</p>`;
+        card.innerHTML = `<h6>${title}</h6><p class="text-light">Failed to load</p>`;
       }
 
       userContent.appendChild(card);
@@ -754,18 +755,18 @@ async function loadAnalytics() {
   } else {
     userContent.innerHTML = `<p>Select a user to see token stats</p>`;
   }
+
   // ---------------- All-users Analytics Cards ----------------
   const endpoints = [
-    ["Top Chatbots by Messages", "/vendors/top-chatbots/messages", ["Chatbot", "Messages"], ["chatbot_name", "message_count"]],
-    ["Top Chatbots by Users", "/vendors/top-chatbots/users", ["Chatbot", "Unique Users"], ["chatbot_name", "unique_users"]],
-    ["Daily Messages", "/vendors/daily/messages", ["Day", "Chatbot", "Messages"], ["day", "chatbot_name", "messages"]],
-    ["Daily Unique Users", "/vendors/daily/unique-users", ["Day", "Chatbot", "Unique Users"], ["day", "chatbot_name", "unique_users"]]
+    ["Top Chatbots by Conversations", "/vendors/top-chatbots/conversations", ["Chatbot", "Conversations"], ["chatbot_name", "conversation_count"], "card-blue"],
+    ["Top Chatbots by Users", "/vendors/top-chatbots/users", ["Chatbot", "Unique Users"], ["chatbot_name", "unique_users"], "card-purple"],
+    ["Daily Messages", "/vendors/daily/messages", ["Day", "Chatbot", "Messages"], ["day", "chatbot_name", "messages"], "card-green"],
+    ["Daily Unique Users", "/vendors/daily/unique-users", ["Day", "Chatbot", "Unique Users"], ["day", "chatbot_name", "unique_users"], "card-cyan"]
   ];
 
-  for (let i = 0; i < endpoints.length; i++) {
-    const [title, url, headersArr, keysArr] = endpoints[i];
+  for (let [title, url, headersArr, keysArr, colorClass] of endpoints) {
     const card = document.createElement("div");
-    card.className = `analytics-card card p-3 shadow-sm`;
+    card.className = `analytics-card ${colorClass}`;
 
     try {
       const res = await fetch(API_BASE + url, { headers: { Authorization: `Bearer ${token}` } });
@@ -774,24 +775,29 @@ async function loadAnalytics() {
       let html = `<h6>${title}</h6>`;
 
       if (Array.isArray(data) && data.length) {
-        html += `<table class="table table-sm mt-2">
-                  <thead><tr>${headersArr.map(h => `<th>${h}</th>`).join("")}</tr></thead>
-                  <tbody>
-                    ${data.map(row => `<tr>${keysArr.map(k => `<td>${row[k]}</td>`).join("")}</tr>`).join("")}
-                  </tbody>
-                 </table>`;
+        html += `
+          <table class="table table-sm mt-2">
+            <thead>
+              <tr>${headersArr.map(h => `<th>${h}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${data.map(row => `<tr>${keysArr.map(k => `<td>${row[k]}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+        `;
       } else {
-        html += `<p class="text-muted mt-2">No data available</p>`;
+        html += `<p class="text-light mt-2">No data available</p>`;
       }
 
       card.innerHTML = html;
     } catch {
-      card.innerHTML = `<h6>${title}</h6><p class="text-danger">Failed to load data</p>`;
+      card.innerHTML = `<h6>${title}</h6><p class="text-light">Failed to load data</p>`;
     }
 
     analyticsList.appendChild(card);
   }
 }
+
 
 // Function to set active sidebar button
 function setActiveSidebar(button) {

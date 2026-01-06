@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from collections import defaultdict
 from typing import List, Dict
+from modules.messages.models.messages_model import Message
 from modules.conversations.models.conversation_model import Conversation
 from modules.conversations.schemas.conversation_schema import ConversationRead
 
@@ -37,7 +38,7 @@ def get_conversations_with_a_chatbot(db: Session, user_id: int, chatbot_id: int)
     return dict(sessions)
 
 def count_of_messages(db : Session) ->int:
-    return db.query(func.count(Conversation.id)).scalar()
+    return db.query(func.count(Message.id)).scalar()
 
 def count_unique_sessions(db: Session) -> int:
     return db.query(func.count(func.distinct(Conversation.session_id))).scalar()

@@ -97,13 +97,13 @@ def delete_vendor(db: Session, vendor_id: int) -> bool:
 
 
 
-#  VENDOR: TOP CHATBOTS BY MESSAGE COUNT
-def get_vendor_top_chatbots_by_messages(db: Session, vendor_id: int, limit: int = 3):
+#  VENDOR: TOP CHATBOTS BY CONVERSATION COUNT
+def get_vendor_top_chatbots_by_conversations(db: Session, vendor_id: int, limit: int = 3):
     rows = (
         db.query(
             Chatbot.id.label("chatbot_id"),
             Chatbot.name.label("chatbot_name"),
-            func.count(Conversation.id).label("message_count")
+            func.count(Conversation.id).label("conversation_count")
         )
         .join(Conversation, Conversation.chatbot_id == Chatbot.id)
         .filter(Chatbot.vendor_id == vendor_id)
@@ -116,7 +116,7 @@ def get_vendor_top_chatbots_by_messages(db: Session, vendor_id: int, limit: int 
     return [
         {
             "chatbot_name": r.chatbot_name,
-            "message_count": r.message_count
+            "conversation_count": r.conversation_count
         }
         for r in rows
     ]
@@ -146,22 +146,24 @@ def get_vendor_top_chatbots_by_users(db: Session, vendor_id: int, limit: int = 3
         for r in rows
     ]
 
-#  VENDOR: DAILY MESSAGE COUNT (7-day dashboard chart)
 def get_vendor_daily_message_count(db: Session, vendor_id: int):
+    # Join Message -> Conversation -> Chatbot
     rows = (
         db.query(
             Chatbot.id.label("chatbot_id"),
             Chatbot.name.label("chatbot_name"),
-            func.date(Conversation.created_at).label("day"),
-            func.count(Conversation.id).label("messages")
+            func.date(Message.created_at).label("day"),
+            func.count(Message.id).label("messages")
         )
-        .join(Conversation, Conversation.chatbot_id == Chatbot.id)
+        .join(Conversation, Conversation.id == Message.conversation_id)
+        .join(Chatbot, Chatbot.id == Conversation.chatbot_id)
         .filter(Chatbot.vendor_id == vendor_id)
-        .group_by(Chatbot.id, func.date(Conversation.created_at))
-        .order_by("day")
+        .group_by(Chatbot.id, Chatbot.name, func.date(Message.created_at))
+        .order_by(func.date(Message.created_at))
         .all()
     )
 
+    # Return structured JSON-like data
     return [
         {
             "chatbot_name": r.chatbot_name,
@@ -197,29 +199,29 @@ def get_vendor_daily_unique_users(db: Session, vendor_id: int):
     ]
 
 
-#  USER: TOKENS LAST 7 DAYS (Vendor-Scoped)
 def get_user_tokens_last_7_days_for_vendor(db: Session, vendor_id: int, user_id: int):
     last_7_days = datetime.utcnow() - timedelta(days=7)
 
-    total = (
-        db.query(func.coalesce(func.sum(Conversation.token_count), 0))
+    total_tokens = (
+        db.query(func.coalesce(func.sum(Message.token_count), 0))
+        .join(Conversation, Message.conversation_id == Conversation.id)
         .join(Chatbot, Conversation.chatbot_id == Chatbot.id)
         .filter(
             Chatbot.vendor_id == vendor_id,
             Conversation.user_id == user_id,
-            Conversation.timestamp >= last_7_days
+            Message.created_at >= last_7_days 
         )
         .scalar()
     )
 
-    return int(total or 0)
+    return int(total_tokens or 0)
 
 
-#  USER: LIFETIME TOKENS (Vendor-Scoped)
 def get_user_total_tokens_for_vendor(db: Session, vendor_id: int, user_id: int):
-    total = (
+    total_tokens = (
         db.query(func.coalesce(func.sum(Message.token_count), 0))
-        .join(Chatbot, Message.chatbot_id == Chatbot.id)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .join(Chatbot, Conversation.chatbot_id == Chatbot.id)
         .filter(
             Chatbot.vendor_id == vendor_id,
             Conversation.user_id == user_id
@@ -227,7 +229,7 @@ def get_user_total_tokens_for_vendor(db: Session, vendor_id: int, user_id: int):
         .scalar()
     )
 
-    return int(total or 0)
+    return int(total_tokens or 0)
 
 #  USER + CHATBOT: MESSAGE COUNT (Vendor-Scoped)
 def get_user_message_count_for_chatbot_and_vendor(db: Session, vendor_id: int, user_id: int, chatbot_id: int):

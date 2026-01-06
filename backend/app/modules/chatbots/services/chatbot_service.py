@@ -251,26 +251,24 @@ def handle_conversation_multiturn(
     token: str,
     user: User | None = None
 ):
+
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
         Chatbot.is_active == True
     ).first()
     if not chatbot:
         raise HTTPException(status_code=404, detail="Chatbot not found or inactive")
-
+    
     api_token = db.query(APIKey).filter(APIKey.token_hash==token, APIKey.chatbot_id==chatbot.id).first()
     if not api_token:
-        raise HTTPException(status_code=404, detail="API Key not found or incorrect")    
+        raise HTTPException(status_code=404, detail="API Key not found or incorrect")
 
     llm_obj = chatbot.llm
     if not llm_obj:
         raise HTTPException(status_code=404, detail="LLM not found for this chatbot")
 
-    if not chatbot.llm_path:
-        raise HTTPException(status_code=400, detail="Chatbot does not have an LLM path configured")
-
-    if not chatbot.llm_path or chatbot.llm_path.strip() == "":
-        raise HTTPException(status_code=400, detail="Chatbot llm_path is empty or not configured")
+    if not chatbot.llm_path or not chatbot.llm_path.strip():
+        raise HTTPException(status_code=400, detail="Chatbot LLM path not configured")
 
     # --- Fetch or create conversation ---
     conversation = (
@@ -310,11 +308,11 @@ def handle_conversation_multiturn(
                 )
             db.refresh(conversation)
 
-    # # --- Check for "bye" message ---
-    # if question.strip().lower() in ("bye", "goodbye", "see you"):
-    #     conversation.is_active = False
-    #     db.commit()
-    #     return "It was nice chatting with you. Goodbye!"
+    # --- Check for "bye" message ---
+    if question.strip().lower() in ("bye", "goodbye", "see you"):
+        conversation.is_active = False
+        db.commit()
+        return "It was nice chatting with you. Goodbye!"
 
     # --- Fetch conversation history only if active ---
     history = []
@@ -333,9 +331,10 @@ def handle_conversation_multiturn(
     for msg in history:
         if msg.sender_type in (SenderType.external, SenderType.vendor, SenderType.admin):
             messages.append(HumanMessage(content=msg.content))
-        else: 
+        else:  # chatbot messages
             messages.append(AIMessage(content=msg.content))
 
+    # --- Prepare embeddings and context if RAG is used ---
     embedd_obj = db.query(Embedding).filter(Embedding.id == llm_obj.embedding_id).first()
     embeddings = OllamaEmbeddings(model=embedd_obj.model_name) if embedd_obj else None
 
@@ -356,10 +355,12 @@ def handle_conversation_multiturn(
     )
     messages.append(HumanMessage(content=final_question))
 
-    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.7)
+    # --- Call the LLM ---
+    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.6)
     response = model.invoke(messages)
     ai_text = response.content
 
+    # --- Save user message ---
     db.add(Message(
         conversation_id=conversation.id,
         sender_type=SenderType.external if not user else SenderType(user.role.value),
@@ -367,6 +368,7 @@ def handle_conversation_multiturn(
         token_count=len(question.split())
     ))
 
+    # --- Save bot message ---
     db.add(Message(
         conversation_id=conversation.id,
         sender_type=SenderType.chatbot,
@@ -486,7 +488,7 @@ def test_handle_conversation_multiturn(
     messages.append(HumanMessage(content=final_question))
 
     # --- Call the LLM ---
-    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.7)
+    model = ChatOllama(model=chatbot.llm_path.strip(), temperature=0.6)
     response = model.invoke(messages)
     ai_text = response.content
 
