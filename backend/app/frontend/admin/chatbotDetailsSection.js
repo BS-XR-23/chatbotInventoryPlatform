@@ -161,7 +161,7 @@ async function showChatbotDetails(chatbotId) {
     // Prepare the widget snippet as text (not executed)
     const widgetSnippet = `
       <script 
-        src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com/static/widget.js" 
+        src="https://stunning-shaved-harry-tours.trycloudflare.com/static/widget.js" 
         data-chatbot="${chatbotId}" 
         data-chatbot-name="${data.name}" 
         data-chatbot-token="${data.widget_token || 'YOUR_DEFAULT_TOKEN'}">

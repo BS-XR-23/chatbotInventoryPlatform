@@ -18,7 +18,7 @@ class LLM(Base):
 
     path = Column(String, nullable=True)
 
-    chatbots = relationship("Chatbot", back_populates="llm")
+    chatbots = relationship("Chatbot", back_populates="llm", cascade="all, delete-orphan")
     embedding = relationship("Embedding", back_populates="llms")
 
     @validates("provider")
