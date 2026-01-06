@@ -608,16 +608,46 @@ async function submitCreateVendor(event) {
   loadVendors(); // refresh vendor list
 }
 
-/* ===================== DOCUMENTS ===================== */
-async function loadDocuments() {
-  const chatbotId = document.getElementById("documentChatbotSelect").value;
-  const documentList = document.getElementById("documentList");
-  documentList.innerHTML = ""; // Clear the list first
+async function deleteVendor(vendorId) {
+  const confirmed = confirm(
+    "Are you sure you want to delete this vendor?\nThis action cannot be undone."
+  );
 
-  // Only load documents if chatbot is selected
-  if (!chatbotId) {
-    return; 
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/admins/delete-vendor/${vendorId}`, {
+      method: "DELETE",
+      headers
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.detail || "Failed to delete vendor");
+      return;
+    }
+    alert("Vendor deleted successfully");
+    loadVendors(); // refresh vendor list
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong while deleting vendor");
   }
+}
+
+
+/* ===================== DOCUMENTS ===================== */
+async function loadDocuments(chatbotId = null) {
+  const select = document.getElementById("documentChatbotSelect");
+  const documentList = document.getElementById("documentList");
+  documentList.innerHTML = ""; // Clear previous list
+
+  if (!chatbotId) {
+    chatbotId = select.value;
+  } else {
+    select.value = chatbotId; // auto-select in dropdown
+  }
+
+  if (!chatbotId) return;
 
   try {
     const res = await fetch(`${API_BASE}/documents/specific_documents/${chatbotId}`, { headers });
@@ -629,7 +659,10 @@ async function loadDocuments() {
       documentList.innerHTML += `
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <span>${doc.title}</span>
-          <span class="badge bg-secondary">${doc.status}</span>
+          <div>
+            <span class="badge bg-secondary me-2">${doc.status}</span>
+            <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">Delete</button>
+          </div>
         </li>
       `;
     });
@@ -638,6 +671,8 @@ async function loadDocuments() {
     alert("Error loading documents: " + error.message);
   }
 }
+
+
 
 // Listen for file selection
 document.getElementById("documentFiles").addEventListener("change", (e) => {
@@ -652,6 +687,33 @@ document.getElementById("documentFiles").addEventListener("change", (e) => {
 
   renderSelectedFiles();
 });
+
+async function deleteDocument(documentId) {
+  if (!confirm("Are you sure you want to delete this document?")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/${documentId}`, {
+      method: "DELETE",
+      headers: headers
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to delete document");
+    }
+
+    alert("Document deleted successfully");
+
+    // Reload documents after deletion
+    const select = document.getElementById("documentChatbotSelect");
+    loadDocuments(select.value);
+
+  } catch (error) {
+    console.error("Error deleting document:", error);
+    alert("Error deleting document: " + error.message);
+  }
+}
+
 
 async function uploadDocuments() {
   const chatbotId = documentChatbotSelect.value;

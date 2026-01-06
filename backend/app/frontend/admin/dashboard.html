@@ -232,6 +232,109 @@
       font-weight: bold;
     }
 
+    /* ================= ANALYTICS CARD ENHANCEMENTS ================= */
+
+    /* Base analytics card */
+    #dashboard .card {
+      border: 0;
+      border-radius: 14px;
+      background: #ffffff;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Hover lift */
+    #dashboard .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Card body spacing */
+    #dashboard .card-body {
+      padding: 20px;
+    }
+
+    /* Titles */
+    #dashboard .card-title,
+    #dashboard h6 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    /* Values */
+    #dashboard .fs-4,
+    #dashboard .fs-5 {
+      color: #212529;
+    }
+
+    /* ---------------- Accent Variants ---------------- */
+
+    /* Default soft blue */
+    #dashboard .card {
+      background: linear-gradient(0deg, #ffffff, #f8faff);
+      border-top: 4px solid #0d6efd;
+    }
+
+    /* Most Used Chatbot */
+    #dashboard #mostUsedChatbot {
+      color: #0d6efd;
+    }
+
+    /* Total Tokens */
+    #dashboard #totalTokensAnalytics {
+      color: #6610f2;
+    }
+
+    /* Summary cards mapping */
+    #dashboard #totalVendors {
+      color: #198754;
+    }
+    #dashboard #totalUsers {
+      color: #0dcaf0;
+    }
+    #dashboard #totalChatbots {
+      color: #fd7e14;
+    }
+    #dashboard #totalMessages {
+      color: #dc3545;
+    }
+    #dashboard #totalConversations {
+      color: #6f42c1;
+    }
+
+    /* Tinted background per column order */
+    #dashboard .row.g-3 .col-md-2:nth-child(1) .card {
+      background: linear-gradient(0deg, #ffffff, #f3fdf6);
+      border-top-color: #198754;
+    }
+    #dashboard .row.g-3 .col-md-2:nth-child(2) .card {
+      background: linear-gradient(0deg, #ffffff, #f0fbff);
+      border-top-color: #0dcaf0;
+    }
+    #dashboard .row.g-3 .col-md-2:nth-child(3) .card {
+      background: linear-gradient(0deg, #ffffff, #fff6ec);
+      border-top-color: #fd7e14;
+    }
+    #dashboard .row.g-3 .col-md-2:nth-child(4) .card {
+      background: linear-gradient(0deg, #ffffff, #fff1f2);
+      border-top-color: #dc3545;
+    }
+    #dashboard .row.g-3 .col-md-2:nth-child(5) .card {
+      background: linear-gradient(0deg, #ffffff, #f5f0ff);
+      border-top-color: #6f42c1;
+    }
+
+    /* Vendor select analytics card */
+    #dashboard select.form-select {
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+
+
   </style>
 </head>
 <body>

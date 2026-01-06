@@ -125,7 +125,7 @@ def embed_document(db: Session, document_id: int) -> VectorDB:
         vector_db = VectorDB(
             chatbot_id=chatbot.id,
             name=vector_db_name,
-            db_path=persist_path,   # ✅ correct path saved
+            db_path=persist_path, 
             is_active=True
         )
         db.add(vector_db)
