@@ -63,12 +63,12 @@ def update_vendor(
         raise HTTPException(status_code=404, detail="Vendor not found")
     return updated_vendor
 
-@router.get("/top-chatbots/messages")
+@router.get("/top-chatbots/conversations")
 def vendor_top_chatbots_by_messages(
     db: Session = Depends(get_db),
     current_vendor: Vendor = Depends(auth_vendor.get_current_vendor)
 ):
-    return vendor_service.get_vendor_top_chatbots_by_messages(db, current_vendor.id)
+    return vendor_service.get_vendor_top_chatbots_by_conversations(db, current_vendor.id)
 
 
 @router.get("/top-chatbots/users")

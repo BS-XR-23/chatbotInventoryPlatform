@@ -51,9 +51,6 @@ def load_vectorstore(store_type, db_path, embeddings):
         raise ValueError("Unsupported vector store. Only 'chroma' and 'faiss' are supported.")
 
 
-
-
-
 def embedd_document(db, chatbot_id, embedd_obj, document_objs):
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,

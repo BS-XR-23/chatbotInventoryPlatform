@@ -4,7 +4,7 @@ const token = localStorage.getItem("access_token");
 // const role = localStorage.getItem("role");
 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 if (!token) {
-    window.location.href = "/index.html";
+    window.location.href = "/";
 }
 
 console.log(localStorage.getItem("user"));
@@ -14,32 +14,46 @@ function logout() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("role");
     localStorage.removeItem("user");
-    window.location.href = "/index.html";
+    window.location.href = "/";
 }
 
 async function ensureCurrentUser() {
-    if (currentUser.id) return;
+    if (currentUser.id) return; // already have user info
+
+    if (!token) {
+        console.warn("No token found, redirecting to login");
+        window.location.href = "/";
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/users/me`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            headers: { "Authorization": `Bearer ${token}` }
         });
 
-        if (!res.ok) throw new Error("Failed to load user");
+        if (res.status === 401) {
+            // Token invalid → force logout
+            console.warn("Token invalid, logging out");
+            logout();
+            return;
+        }
+
+        if (!res.ok) {
+            // Some other error — log it but don't redirect
+            console.error("Failed to load user:", res.status, res.statusText);
+            return;
+        }
 
         const user = await res.json();
-
         localStorage.setItem("user", JSON.stringify(user));
         Object.assign(currentUser, user);
 
         renderUserInfo(user);
     } catch (err) {
-        console.error(err);
-        logout(); // token invalid → force logout
+        console.error("Error fetching current user:", err);
+        // Network or other errors — do NOT logout
     }
 }
-
 
 // ------------------ Profile Actions ------------------
 function updateProfile() {
