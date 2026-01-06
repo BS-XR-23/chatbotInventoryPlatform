@@ -1,5 +1,4 @@
 // const API_BASE = "http://127.0.0.1:9000"; 
-
 const API_BASE = "https://this-glad-genealogy-duties.trycloudflare.com"
 // Get chatbot ID from the script tag
 const scriptTag = document.currentScript;
