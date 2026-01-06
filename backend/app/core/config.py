@@ -15,12 +15,7 @@ class Settings(BaseSettings):
 
     API_PREFIX: str = "/api"
     DEBUG: bool =False
-    ALLOWED_ORIGINS: str = ""
     
-
-    @field_validator("ALLOWED_ORIGINS")
-    def parse_allowed_origins(cls, v: str) ->List[str]:
-        return v.split(",") if v else []
     
     class Config:
         env_file = ".env"

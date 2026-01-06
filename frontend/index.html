@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Chatbot Inventory Platform</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #4e73df, #1cc88a);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .login-card {
+      background: #ffffff;
+      width: 420px;
+      padding: 35px;
+      border-radius: 14px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    h2 {
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+<div class="login-card">
+
+  <h2>Chatbot Inventory Platform</h2>
+
+  <select id="role" class="form-select mb-3">
+    <option value="admin">Admin</option>
+    <option value="vendor">Vendor</option>
+    <option value="user">User</option>
+  </select>
+
+  <input id="email" class="form-control mb-2" placeholder="Email" type="email">
+  <input id="password" type="password" class="form-control mb-3" placeholder="Password">
+
+  <button class="btn btn-primary w-100 mb-2" onclick="login()">Sign In</button>
+
+  <div class="text-center">
+    <small>Don't have an account?</small> 
+    <a href="signup.html">Create an account</a>
+  </div>
+
+</div>
+
+
+<script>
+function toggleVendor() {
+  if (typeof vendorDomain !== "undefined") {
+    vendorDomain.classList.toggle("d-none", role.value !== "vendor");
+  }
+}
+
+async function login() {
+  let endpoint = role.value === "vendor"
+    ? `/auth/vendor/token`
+    : `/auth/${role.value}/token`;
+
+  const form = new URLSearchParams();
+  form.append("username", email.value);
+  form.append("password", password.value);
+
+  try {
+    const res = await fetch("https://this-glad-genealogy-duties.trycloudflare.com" + endpoint, {
+      method: "POST",
+      body: form
+    });
+
+    if (!res.ok) throw new Error("Login failed");
+
+    const data = await res.json();
+
+    // store token and role
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("role", role.value);
+
+    // store user info if role is user
+    if (role.value === "user" && data.user) {
+      localStorage.setItem("user", JSON.stringify({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email
+      }));
+    }
+
+    // store vendor info if vendor
+    if (role.value === "vendor" && data.vendor) {
+      localStorage.setItem("vendor", JSON.stringify({
+        id: data.vendor.id,
+        name: data.vendor.name
+      }));
+    }
+
+    window.location.href = `/${role.value}/dashboard.html`;
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Login failed. Please check your credentials.");
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from db.database import get_db
@@ -82,6 +82,24 @@ def update_vendor_status(
     if not updated_vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
     return updated_vendor
+
+
+@router.delete("/delete-vendor/{vendor_id}", status_code=status.HTTP_200_OK)
+def delete_vendor_endpoint(
+    vendor_id: int,
+    db: Session = Depends(get_db),
+    current_admin=Depends(get_current_admin)
+):
+    success = vendor_service.delete_vendor(db, vendor_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vendor not found"
+        )
+    return {
+        "message": "Vendor deleted successfully",
+        "vendor_id": vendor_id
+    }
 
 @router.post("/chatbots/duplicate/{chatbot_id}")
 def duplicate_chatbot(
