@@ -54,7 +54,6 @@ app.include_router(admin_router.router, prefix="/admins", tags=["Admins"])
 app.include_router(vector_db_router.router, prefix="/vector_dbs", tags=["VectorDBs"])
 
 # Serve static folder
-# app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
