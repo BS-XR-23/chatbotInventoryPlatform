@@ -47,7 +47,13 @@ function showSection(section) {
       loadVendors();
       break;
     case "documents":
-      loadDocuments();
+      const select = document.getElementById("documentChatbotSelect");
+      if (select.options.length > 1) { // skip placeholder
+        const firstChatbotId = select.options[1].value; // first actual chatbot
+        loadDocuments(firstChatbotId);
+      } else {
+        loadDocuments();
+      }
       break;
     case "embeddings":
       loadEmbeddings();
@@ -57,6 +63,7 @@ function showSection(section) {
       break;
   }
 }
+
 
 
 function openChat(chatbotId, chatbotName) {

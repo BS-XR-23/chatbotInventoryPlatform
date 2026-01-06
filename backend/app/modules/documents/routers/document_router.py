@@ -63,7 +63,7 @@ def update_document(document_id: int, document_data: DocumentCreate, db: Session
     return document
 
 @router.delete("/{document_id}")
-def delete_document(document_id: int, db: Session = Depends(get_db), current_vendor: Vendor = Depends(get_current_vendor)):
+def delete_document(document_id: int, db: Session = Depends(get_db)):
     success = document_service.delete_document(db, document_id)
     if not success:
         raise HTTPException(status_code=404, detail="Document not found")

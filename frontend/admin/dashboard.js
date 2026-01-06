@@ -100,109 +100,126 @@ async function duplicateChatbot(chatbotId) {
 
 /* ===================== CHATBOTS ===================== */
 async function loadChatbots() {
-  const res = await fetch(`${API_BASE}/admins/`, { headers });
-  const bots = await res.json();
+  try {
+    // Fetch all chatbots
+    const res = await fetch(`${API_BASE}/admins/`, { headers });
+    const bots = await res.json();
 
-  const llmRes = await fetch(`${API_BASE}/llms/`, { headers });
-  const llms = await llmRes.json();
-  globalLLMs = llms;
-  const llmMap = {};
-  llms.forEach(l => { llmMap[l.id] = l; });
+    // Fetch LLMs
+    const llmRes = await fetch(`${API_BASE}/llms/`, { headers });
+    const llms = await llmRes.json();
+    globalLLMs = llms;
+    const llmMap = {};
+    llms.forEach(l => { llmMap[l.id] = l; });
 
-  const container = document.getElementById("chatbotList");
-  container.innerHTML = `
-    <table class="table table-striped table-hover">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>LLM</th>
-          <th>Vector Store</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="chatbotTableBody"></tbody>
-    </table>
-  `;
-
-  const tbody = document.getElementById("chatbotTableBody");
-
-  bots.forEach(bot => {
-    const llm = llmMap[bot.llm_id]; 
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${bot.name}</td>
-      <td>
-        ${llm?.name || "N/A"}<br>
-        <small class="text-muted">Provider: ${llm?.provider || "N/A"} | Token Limit: ${llm?.def_token_limit || "N/A"}</small>
-      </td>
-      <td>${bot.vector_store_type}</td>
+    // Render chatbot table
+    const container = document.getElementById("chatbotList");
+    container.innerHTML = `
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>LLM</th>
+            <th>Vector Store</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="chatbotTableBody"></tbody>
+      </table>
     `;
+    const tbody = document.getElementById("chatbotTableBody");
 
-    // Actions td with vertical buttons
-    const tdActions = document.createElement("td");
-    tdActions.className = "d-flex flex-column";
-    tdActions.style.gap = "4px";
-
-    // Duplicate button
-    const dupBtn = document.createElement("button");
-    dupBtn.className = "btn btn-sm btn-primary";
-    dupBtn.textContent = "Duplicate";
-    dupBtn.addEventListener("click", () => duplicateChatbot(bot.id));
-    tdActions.appendChild(dupBtn);
-
-    // Edit button
-    const editBtn = document.createElement("button");
-    editBtn.className = "btn btn-sm btn-warning";
-    editBtn.textContent = "Edit";
-    editBtn.addEventListener("click", () => openUpdateChatbotModal(bot));
-    tdActions.appendChild(editBtn);
-
-    // Delete button
-    const delBtn = document.createElement("button");
-    delBtn.className = "btn btn-sm btn-danger";
-    delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", () => deleteChatbot(bot.id));
-    tdActions.appendChild(delBtn);
-
-    // Details button
-    const detailsBtn = document.createElement("button");
-    detailsBtn.className = "btn btn-sm btn-info";
-    detailsBtn.textContent = "Details";
-    detailsBtn.addEventListener("click", () => showChatbotDetails(bot.id));
-    tdActions.appendChild(detailsBtn);
-
-    tr.appendChild(tdActions);
-    tbody.appendChild(tr);
-  });
-
-  // Load most-used chatbot analytics
-  const analyticsRes = await fetch(`${API_BASE}/admins/most-used-chatbot`, { headers });
-  const analytics = await analyticsRes.json();
-
-  if (analytics?.chatbot) {
-    mostUsedChatbot.innerHTML = `
-      <strong>${analytics.chatbot.name}</strong><br>
-      Usage Count: ${analytics.usage_count}
-    `;
-  } else {
-    mostUsedChatbot.innerText = "No analytics data available";
-  }
-
-  // -------------------------------
-  // Populate chatbot dropdown for document uploads
-  // -------------------------------
-  const documentChatbotSelect = document.getElementById("documentChatbotSelect");
-  if (documentChatbotSelect) {
-    documentChatbotSelect.innerHTML = '<option value="">-- Select Chatbot --</option>';
     bots.forEach(bot => {
-      const option = document.createElement("option");
-      option.value = bot.id;
-      option.text = bot.name;
-      documentChatbotSelect.appendChild(option);
+      const llm = llmMap[bot.llm_id];
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${bot.name}</td>
+        <td>
+          ${llm?.name || "N/A"}<br>
+          <small class="text-muted">Provider: ${llm?.provider || "N/A"} | Token Limit: ${llm?.def_token_limit || "N/A"}</small>
+        </td>
+        <td>${bot.vector_store_type}</td>
+      `;
+
+      const tdActions = document.createElement("td");
+      tdActions.className = "d-flex flex-column";
+      tdActions.style.gap = "4px";
+
+      const dupBtn = document.createElement("button");
+      dupBtn.className = "btn btn-sm btn-primary";
+      dupBtn.textContent = "Duplicate";
+      dupBtn.addEventListener("click", () => duplicateChatbot(bot.id));
+      tdActions.appendChild(dupBtn);
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn btn-sm btn-warning";
+      editBtn.textContent = "Edit";
+      editBtn.addEventListener("click", () => openUpdateChatbotModal(bot));
+      tdActions.appendChild(editBtn);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn btn-sm btn-danger";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", () => deleteChatbot(bot.id));
+      tdActions.appendChild(delBtn);
+
+      const detailsBtn = document.createElement("button");
+      detailsBtn.className = "btn btn-sm btn-info";
+      detailsBtn.textContent = "Details";
+      detailsBtn.addEventListener("click", () => showChatbotDetails(bot.id));
+      tdActions.appendChild(detailsBtn);
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
     });
+
+    // Load most-used chatbot analytics
+    const analyticsRes = await fetch(`${API_BASE}/admins/most-used-chatbot`, { headers });
+    const analytics = await analyticsRes.json();
+
+    if (analytics?.chatbot) {
+      mostUsedChatbot.innerHTML = `
+        <strong>${analytics.chatbot.name}</strong><br>
+        Usage Count: ${analytics.usage_count}
+      `;
+    } else {
+      mostUsedChatbot.innerText = "No analytics data available";
+    }
+
+    // -------------------------------
+    // Populate document chatbot dropdown
+    // -------------------------------
+    const documentChatbotSelect = document.getElementById("documentChatbotSelect");
+    if (documentChatbotSelect) {
+      documentChatbotSelect.innerHTML = '<option value="">-- Select Chatbot --</option>';
+      bots.forEach(bot => {
+        const option = document.createElement("option");
+        option.value = bot.id;
+        option.text = bot.name;
+        documentChatbotSelect.appendChild(option);
+      });
+
+      // Automatically load documents for the first chatbot ONLY if it exists
+      const firstBot = bots[0];
+      if (firstBot) {
+        documentChatbotSelect.value = firstBot.id;
+        loadDocuments(firstBot.id); // pass the ID directly
+      }
+
+      // Add change listener
+      documentChatbotSelect.addEventListener("change", (e) => {
+        const selectedId = e.target.value;
+        if (selectedId) loadDocuments(selectedId); // only call if valid
+      });
+    }
+
+  } catch (error) {
+    console.error("Error loading chatbots:", error);
+    alert("Error loading chatbots: " + error.message);
   }
 }
+
 
 
 
@@ -608,16 +625,46 @@ async function submitCreateVendor(event) {
   loadVendors(); // refresh vendor list
 }
 
-/* ===================== DOCUMENTS ===================== */
-async function loadDocuments() {
-  const chatbotId = document.getElementById("documentChatbotSelect").value;
-  const documentList = document.getElementById("documentList");
-  documentList.innerHTML = ""; // Clear the list first
+async function deleteVendor(vendorId) {
+  const confirmed = confirm(
+    "Are you sure you want to delete this vendor?\nThis action cannot be undone."
+  );
 
-  // Only load documents if chatbot is selected
-  if (!chatbotId) {
-    return; 
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/admins/delete-vendor/${vendorId}`, {
+      method: "DELETE",
+      headers
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.detail || "Failed to delete vendor");
+      return;
+    }
+    alert("Vendor deleted successfully");
+    loadVendors(); // refresh vendor list
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong while deleting vendor");
   }
+}
+
+
+/* ===================== DOCUMENTS ===================== */
+async function loadDocuments(chatbotId = null) {
+  const documentList = document.getElementById("documentList");
+  documentList.innerHTML = ""; // Clear the list
+
+  const select = document.getElementById("documentChatbotSelect");
+
+  // Fallback to the selected value in the dropdown
+  if (!chatbotId) chatbotId = select.value;
+  if (!chatbotId) return;
+
+  chatbotId = Number(chatbotId);
+  if (isNaN(chatbotId)) return; // Safeguard against invalid IDs
 
   try {
     const res = await fetch(`${API_BASE}/documents/specific_documents/${chatbotId}`, { headers });
@@ -625,21 +672,34 @@ async function loadDocuments() {
 
     const docs = await res.json();
 
+    if (!docs.length) {
+      documentList.innerHTML = `<li class="list-group-item">No documents found.</li>`;
+      return;
+    }
+
+    // Render each document with status badge and Delete button
     docs.forEach(doc => {
       documentList.innerHTML += `
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <span>${doc.title}</span>
-          <span class="badge bg-secondary">${doc.status}</span>
+          <div>
+            <span class="badge bg-secondary me-2">${doc.status}</span>
+            <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})">Delete</button>
+          </div>
         </li>
       `;
     });
+
   } catch (error) {
     console.error("Error loading documents:", error);
     alert("Error loading documents: " + error.message);
   }
 }
 
+
+// -------------------------------
 // Listen for file selection
+// -------------------------------
 document.getElementById("documentFiles").addEventListener("change", (e) => {
   const files = Array.from(e.target.files);
 
@@ -652,6 +712,33 @@ document.getElementById("documentFiles").addEventListener("change", (e) => {
 
   renderSelectedFiles();
 });
+
+async function deleteDocument(documentId) {
+  if (!confirm("Are you sure you want to delete this document?")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/${documentId}`, {
+      method: "DELETE",
+      headers: headers
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to delete document");
+    }
+
+    alert("Document deleted successfully");
+
+    // Reload documents after deletion
+    const select = document.getElementById("documentChatbotSelect");
+    loadDocuments(select.value);
+
+  } catch (error) {
+    console.error("Error deleting document:", error);
+    alert("Error deleting document: " + error.message);
+  }
+}
+
 
 async function uploadDocuments() {
   const chatbotId = documentChatbotSelect.value;
