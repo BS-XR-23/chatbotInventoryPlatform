@@ -251,7 +251,6 @@ def handle_conversation_multiturn(
     token: str,
     user: User | None = None
 ):
-    # --- Fetch chatbot and LLM ---
     chatbot = db.query(Chatbot).filter(
         Chatbot.id == chatbot_id,
         Chatbot.is_active == True
@@ -311,11 +310,11 @@ def handle_conversation_multiturn(
                 )
             db.refresh(conversation)
 
-    # --- Check for "bye" message ---
-    if question.strip().lower() in ("bye", "goodbye", "see you"):
-        conversation.is_active = False
-        db.commit()
-        return "It was nice chatting with you. Goodbye!"
+    # # --- Check for "bye" message ---
+    # if question.strip().lower() in ("bye", "goodbye", "see you"):
+    #     conversation.is_active = False
+    #     db.commit()
+    #     return "It was nice chatting with you. Goodbye!"
 
     # --- Fetch conversation history only if active ---
     history = []

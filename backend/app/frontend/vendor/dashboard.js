@@ -192,7 +192,7 @@ async function showChatbotDetails(chatbotId) {
 
   // ------------------ Widget script (shown as text, not executed) ------------------
   const widgetScript = `<script 
-    src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com/static/widget.js" 
+    src="https://this-glad-genealogy-duties.trycloudflare.com/static/widget.js" 
     data-chatbot="${data.id}" 
     data-chatbot-name="${data.name}" 
     data-chatbot-token="${tokenHash}">
