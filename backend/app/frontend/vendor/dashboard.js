@@ -192,7 +192,7 @@ async function showChatbotDetails(chatbotId) {
 
   // ------------------ Widget script (shown as text, not executed) ------------------
   const widgetScript = `<script 
-    src="https://stunning-shaved-harry-tours.trycloudflare.com/static/widget.js" 
+    src="https://rocky-liver-taste-connectivity.trycloudflare.com/static/widget.js" 
     data-chatbot="${data.id}" 
     data-chatbot-name="${data.name}" 
     data-chatbot-token="${tokenHash}">
