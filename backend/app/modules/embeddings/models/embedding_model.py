@@ -12,7 +12,7 @@ class Embedding(Base):
     path = Column(String, nullable=True)
 
     # string reference to LLM to avoid circular import
-    llms = relationship("LLM", back_populates="embedding")
+    llms = relationship("LLM", back_populates="embedding", cascade="all, delete-orphan")
 
     @validates("provider")
     def validate_provider(self, key, value):
