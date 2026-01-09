@@ -1,8 +1,7 @@
 // const API_BASE = "http://127.0.0.1:9000"; 
-const API_BASE = "https://this-glad-genealogy-duties.trycloudflare.com"
+const API_BASE = "https://cabin-allocated-accidents-examined.trycloudflare.com"
 // Get chatbot ID from the script tag
 const scriptTag = document.currentScript;
-const selectedChatbotId = scriptTag.getAttribute("data-chatbot");
 const selectedChatbotName = scriptTag.getAttribute("data-chatbot-name") || "Chatbot";
 const selectedChatbottoken = scriptTag.getAttribute("data-chatbot-token");
 
@@ -108,11 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Only now attach listeners ---
     if (chatBubble) {
         chatBubble.addEventListener("click", () => {
-            if (!selectedChatbotId) {
-                alert("Chatbot ID missing! Add data-chatbot to the script tag.");
-                return;
-            }
-
             chatWindow.style.display = 
                 chatWindow.style.display === "flex" ? "none" : "flex";
 
@@ -137,10 +131,6 @@ let sessionId = null;
 
 // ------------------ Send Message ------------------
 async function sendMessage() {
-    if (!selectedChatbotId) {
-        alert("Chatbot ID missing from widget script tag!");
-        return;
-    }
     if (!selectedChatbottoken) {
         alert("Chatbot token missing from widget script tag!");
         return;
@@ -169,7 +159,7 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbotId}/${selectedChatbottoken}/chat`, {
+        const res = await fetch(`${API_BASE}/chatbots/${selectedChatbottoken}/chat`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 

@@ -420,16 +420,14 @@ async function loadVendors() {
   globalVendors = vendors; // save globally for modal use
 
   // ---------------------------
-  // Populate vendor list (for vendor table)
+  // Populate vendor list (table)
   // ---------------------------
   const vendorListEl = document.getElementById("vendorList");
   vendorListEl.innerHTML = ""; // clear first
 
-  // Build table dynamically inside JS
   const table = document.createElement("table");
   table.className = "table table-striped table-hover";
 
-  // Table header
   table.innerHTML = `
     <thead>
       <tr>
@@ -450,20 +448,36 @@ async function loadVendors() {
   vendors.forEach(v => {
     const tr = document.createElement("tr");
 
+    // Create status dropdown
+    const statusSelect = document.createElement("select");
+    statusSelect.className = "form-select form-select-sm"; // bootstrap styling
+    ["Active", "Inactive"].forEach(opt => {
+      const option = document.createElement("option");
+      option.value = opt.toLowerCase(); // store as lowercase
+      option.textContent = opt;
+      if ((v.status || "").toLowerCase() === opt.toLowerCase()) {
+        option.selected = true;
+      }
+      statusSelect.appendChild(option);
+    });
+
+    // On change, update vendor status
+    statusSelect.onchange = () => updateVendorStatus(v.id, statusSelect.value);
+
     tr.innerHTML = `
       <td>${v.name}</td>
       <td>${v.user_count || 0}</td>
       <td>${v.chatbot_count || 0}</td>
-      <td><span class="badge bg-secondary">${v.status || 'N/A'}</span></td>
+      <td></td> <!-- status dropdown will go here -->
       <td>
-        <button class="btn btn-sm btn-warning-solid me-1" onclick="updateVendorStatus(${v.id})">
-          Update Status
-        </button>
         <button class="btn btn-sm btn-danger-solid" onclick="deleteVendor(${v.id})">
           Delete
         </button>
       </td>
     `;
+
+    // Append status dropdown to 4th td
+    tr.children[3].appendChild(statusSelect);
 
     tbody.appendChild(tr);
   });
@@ -501,8 +515,20 @@ async function loadVendors() {
     });
   }
 
+  // Populate vendor dropdown for Admin Token create
+  const adminApiVendorSelect = document.getElementById("adminApiVendorSelect");
+  if (adminApiVendorSelect) {
+    adminApiVendorSelect.innerHTML = '<option value="">-- Select Vendor --</option>';
+    vendors.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.name;
+      adminApiVendorSelect.appendChild(opt);
+    });
+  }
+
   // ---------------------------
-  // Optional: Most users vendor (commented)
+  // Optional analytics (commented)
   // ---------------------------
   // const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
   // let usersData = await usersRes.json();
@@ -516,10 +542,7 @@ async function loadVendors() {
   // } else {
   //   mostUsersVendor.innerText = "No data available";
   // }
-
-  // ---------------------------
-  // Optional: Most chatbots vendor (commented)
-  // ---------------------------
+  //
   // const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
   // let botsData = await botsRes.json();
   // if (Array.isArray(botsData)) botsData = botsData[0];
@@ -550,17 +573,23 @@ async function loadTotalTokensAnalytics() {
   `;
 }
 
-async function updateVendorStatus(id) {
-  const status = prompt("Enter status (active / inactive):");
-  if (!status) return;
+async function updateVendorStatus(id, status) {
+  try {
+    await fetch(`${API_BASE}/admins/update-vendors/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers
+      },
+      body: JSON.stringify({ status })
+    });
 
-  await fetch(`${API_BASE}/admins/update-vendors/${id}`, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify({ status })
-  });
-
-  loadVendors();
+    // Reload vendors to reflect updated status
+    loadVendors();
+  } catch (err) {
+    console.error("Error updating vendor status:", err);
+    alert("Failed to update vendor status");
+  }
 }
 
 async function loadTotalTokens() {
@@ -1174,6 +1203,150 @@ async function submitPasswordForm(event) {
     alert(`Error: ${err.message}`);
   }
 }
+
+
+/* ===================== API Tokens ===================== */
+async function loadAdminApiTokens(vendorId) {
+  if (!vendorId) return;
+
+  showSection("adminApiTokens");
+
+  const tbody = document.getElementById("adminApiTokensList");
+  tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+  const res = await fetch(
+    `${API_BASE}/api-keys/by-vendor/${vendorId}`,
+    { headers }
+  );
+
+  const keys = await res.json();
+
+  if (!keys.length) {
+    tbody.innerHTML = "<tr><td colspan='5'>No API tokens</td></tr>";
+    return;
+  }
+
+  tbody.innerHTML = keys.map(k => `
+    <tr>
+      <td>${k.chatbot_id}</td>
+      <td>${k.vendor_domain}</td>
+      <td>
+        <input class="form-control form-control-sm" value="${k.token_hash}" readonly>
+        <button 
+          class="btn btn-sm btn-outline-primary mt-1" 
+          onclick="
+            const btn = this;
+            navigator.clipboard.writeText('${k.token_hash}').then(() => {
+              const original = btn.textContent;
+              btn.textContent = 'Copied';
+              setTimeout(() => btn.textContent = original, 1500);
+            });
+          "
+        >
+          Copy
+        </button>
+      </td>
+      <td>${k.status}</td>
+      <td>${new Date(k.created_at).toLocaleString()}</td>
+    </tr>
+  `).join("");
+}
+
+async function showAdminCreateApiTokenModal() {
+  const vendorId = document.getElementById("adminApiVendorSelect").value;
+
+  if (!vendorId) {
+    alert("Please select a vendor first");
+    return;
+  }
+
+  const chatbotSelect = document.getElementById("adminApiChatbotSelect");
+  chatbotSelect.innerHTML = "<option value=''>Loading chatbots...</option>";
+
+  try {
+    // Use your existing route
+    const res = await fetch(
+      `${API_BASE}/chatbots/vendor_chatbots_for_user/${vendorId}`,
+      { headers }
+    );
+
+    const bots = await res.json();
+
+    chatbotSelect.innerHTML = "<option value=''>-- Select Chatbot --</option>";
+
+    if (!bots.length) {
+      chatbotSelect.innerHTML = "<option value=''>No chatbots found</option>";
+    } else {
+      bots.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;          // chatbot_id
+        opt.textContent = b.name;  // visible label
+        chatbotSelect.appendChild(opt);
+      });
+    }
+
+    // reset domain field
+    document.getElementById("adminApiVendorDomain").value = "";
+
+    // Show modal
+    const modal = new bootstrap.Modal(
+      document.getElementById("adminCreateApiTokenModal")
+    );
+    modal.show();
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load chatbots");
+  }
+}
+
+
+
+async function submitAdminCreateApiToken(e) {
+  e.preventDefault();
+
+  const vendorId = parseInt(
+    document.getElementById("adminApiVendorSelect").value
+  );
+
+ const chatbotId = parseInt(
+  document.getElementById("adminApiChatbotSelect").value
+);
+
+  const domain = document.getElementById("adminApiVendorDomain").value.trim();
+
+  const res = await fetch(
+    `${API_BASE}/api-keys/create`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers
+      },
+      body: JSON.stringify({
+        vendor_id: vendorId,
+        chatbot_id: chatbotId,
+        vendor_domain: domain
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert(err.detail || "Failed to create API token");
+    return;
+  }
+
+  const data = await res.json();
+  alert(`API Token Created:\n${data.token}`);
+
+  bootstrap.Modal
+    .getInstance(document.getElementById("adminCreateApiTokenModal"))
+    .hide();
+
+  loadAdminApiTokens(vendorId);
+}
+
 
 // Function to set active sidebar button
 function setActiveSidebar(button) {

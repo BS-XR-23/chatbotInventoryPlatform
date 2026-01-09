@@ -29,6 +29,7 @@ def create_api_key(
         api_key_data.vendor_domain,
         api_key_data.chatbot_id
     )
+
     new_key = APIKey(
         vendor_id=vendor_id,
         chatbot_id=api_key_data.chatbot_id,
@@ -36,9 +37,11 @@ def create_api_key(
         token_hash=token_hash,
         status=APIKeyStatus.active
     )
+
     db.add(new_key)
     db.commit()
     db.refresh(new_key)
+
     return APIKeyCreateResponse(
         id=new_key.id,
         token=token

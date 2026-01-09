@@ -12,7 +12,8 @@ function showSection(section) {
     "documents",
     "embeddings",
     "llms",
-    "chatbotDetails"
+    "chatbotDetails",
+    "adminApiTokens"
   ];
 
   // Hide all sections
@@ -61,10 +62,10 @@ function showSection(section) {
     case "llms":
       loadLLMs();
       break;
+    case "adminApiTokens":
+      break;
   }
 }
-
-
 
 function openChat(chatbotId, chatbotName) {
   const chatWindow = document.getElementById("chatWindow");
@@ -158,15 +159,33 @@ async function showChatbotDetails(chatbotId) {
     // Load documents for this chatbot
     loadChatbotDocuments(chatbotId);
 
+    // Fetch latest active API token for this chatbot
+    let widgetToken = "CREATE_TOKEN"; // fallback
+
+    try {
+      const tokenRes = await fetch(`${API_BASE}/api-keys/by-chatbot/${chatbotId}`, {
+        headers
+      });
+
+      if (tokenRes.ok) {
+        const tokens = await tokenRes.json();
+        // Use the first active token
+        const activeToken = tokens.find(t => t.status === "active");
+        if (activeToken) widgetToken = activeToken.token_hash; // <-- real token
+      }
+    } catch (err) {
+      console.error("Failed to fetch widget token:", err);
+    }
+
     // Prepare the widget snippet as text (not executed)
     const widgetSnippet = `
       <script 
-        src="https://mhz-sarah-enjoy-citysearch.trycloudflare.com/static/widget.js" 
-        data-chatbot="${chatbotId}" 
+        src="https://cabin-allocated-accidents-examined.trycloudflare.com/static/widget.js" 
         data-chatbot-name="${data.name}" 
-        data-chatbot-token="${data.widget_token || 'YOUR_DEFAULT_TOKEN'}">
+        data-chatbot-token="${widgetToken}">
       </script>
-      `;
+    `;
+
     // Show snippet in <pre>
     document.getElementById("widgetCodeContainer").textContent = widgetSnippet.trim();
 
@@ -253,7 +272,7 @@ async function sendMessage() {
     if (sessionId) body.session_id = sessionId;
 
     // Send request to multi-turn backend
-    const res = await fetch(`${API_BASE}/chatbots/${currentChatbotId}/chat`, {
+    const res = await fetch(`${API_BASE}/chatbots/test/${currentChatbotId}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -280,7 +299,7 @@ async function sendMessage() {
   } catch (err) {
     const errDiv = document.createElement("div");
     errDiv.classList.add("chat-message", "bot");
-    errDiv.innerHTML = `<strong>Bot:</strong> Error: ${err.message}`;
+    errDiv.innerHTML = `Error: ${err.message}`;
     chatMessages.appendChild(errDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   } finally {
