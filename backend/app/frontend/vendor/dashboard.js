@@ -179,7 +179,6 @@ async function showChatbotDetails(chatbotId) {
       headers: { Authorization: `Bearer ${token}` }
     });
     const keysData = await keysRes.json();
-    console.log("API Keys response:", keysData);
 
     const keys = Array.isArray(keysData) ? keysData : [];
     const keyForThisChatbot = keys.find(k => k.chatbot_id === chatbotId);
