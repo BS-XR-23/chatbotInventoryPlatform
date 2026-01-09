@@ -420,16 +420,14 @@ async function loadVendors() {
   globalVendors = vendors; // save globally for modal use
 
   // ---------------------------
-  // Populate vendor list (for vendor table)
+  // Populate vendor list (table)
   // ---------------------------
   const vendorListEl = document.getElementById("vendorList");
   vendorListEl.innerHTML = ""; // clear first
 
-  // Build table dynamically inside JS
   const table = document.createElement("table");
   table.className = "table table-striped table-hover";
 
-  // Table header
   table.innerHTML = `
     <thead>
       <tr>
@@ -450,20 +448,36 @@ async function loadVendors() {
   vendors.forEach(v => {
     const tr = document.createElement("tr");
 
+    // Create status dropdown
+    const statusSelect = document.createElement("select");
+    statusSelect.className = "form-select form-select-sm"; // bootstrap styling
+    ["Active", "Inactive"].forEach(opt => {
+      const option = document.createElement("option");
+      option.value = opt.toLowerCase(); // store as lowercase
+      option.textContent = opt;
+      if ((v.status || "").toLowerCase() === opt.toLowerCase()) {
+        option.selected = true;
+      }
+      statusSelect.appendChild(option);
+    });
+
+    // On change, update vendor status
+    statusSelect.onchange = () => updateVendorStatus(v.id, statusSelect.value);
+
     tr.innerHTML = `
       <td>${v.name}</td>
       <td>${v.user_count || 0}</td>
       <td>${v.chatbot_count || 0}</td>
-      <td><span class="badge bg-secondary">${v.status || 'N/A'}</span></td>
+      <td></td> <!-- status dropdown will go here -->
       <td>
-        <button class="btn btn-sm btn-warning-solid me-1" onclick="updateVendorStatus(${v.id})">
-          Update Status
-        </button>
         <button class="btn btn-sm btn-danger-solid" onclick="deleteVendor(${v.id})">
           Delete
         </button>
       </td>
     `;
+
+    // Append status dropdown to 4th td
+    tr.children[3].appendChild(statusSelect);
 
     tbody.appendChild(tr);
   });
@@ -500,23 +514,21 @@ async function loadVendors() {
       vendorSelectUpload.appendChild(option);
     });
   }
+
   // Populate vendor dropdown for Admin Token create
   const adminApiVendorSelect = document.getElementById("adminApiVendorSelect");
-if (adminApiVendorSelect) {
-  adminApiVendorSelect.innerHTML =
-    '<option value="">-- Select Vendor --</option>';
-
-  vendors.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v.id;
-    opt.textContent = v.name;
-    adminApiVendorSelect.appendChild(opt);
-  });
-}
-
+  if (adminApiVendorSelect) {
+    adminApiVendorSelect.innerHTML = '<option value="">-- Select Vendor --</option>';
+    vendors.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.name;
+      adminApiVendorSelect.appendChild(opt);
+    });
+  }
 
   // ---------------------------
-  // Optional: Most users vendor (commented)
+  // Optional analytics (commented)
   // ---------------------------
   // const usersRes = await fetch(`${API_BASE}/admins/most-users-by-vendors`, { headers });
   // let usersData = await usersRes.json();
@@ -530,10 +542,7 @@ if (adminApiVendorSelect) {
   // } else {
   //   mostUsersVendor.innerText = "No data available";
   // }
-
-  // ---------------------------
-  // Optional: Most chatbots vendor (commented)
-  // ---------------------------
+  //
   // const botsRes = await fetch(`${API_BASE}/admins/most-chatbots-by-vendors`, { headers });
   // let botsData = await botsRes.json();
   // if (Array.isArray(botsData)) botsData = botsData[0];
@@ -564,17 +573,23 @@ async function loadTotalTokensAnalytics() {
   `;
 }
 
-async function updateVendorStatus(id) {
-  const status = prompt("Enter status (active / inactive):");
-  if (!status) return;
+async function updateVendorStatus(id, status) {
+  try {
+    await fetch(`${API_BASE}/admins/update-vendors/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers
+      },
+      body: JSON.stringify({ status })
+    });
 
-  await fetch(`${API_BASE}/admins/update-vendors/${id}`, {
-    method: "PUT",
-    headers,
-    body: JSON.stringify({ status })
-  });
-
-  loadVendors();
+    // Reload vendors to reflect updated status
+    loadVendors();
+  } catch (err) {
+    console.error("Error updating vendor status:", err);
+    alert("Failed to update vendor status");
+  }
 }
 
 async function loadTotalTokens() {
