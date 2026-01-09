@@ -371,9 +371,6 @@
   <!-- API Tokens Section -->
   <div id="apiTokensSection" class="d-none">
     <h3>API Tokens</h3>
-
-    <button class="btn btn-primary mb-3" onclick="showCreateApiTokenModal()">Create API Token</button>
-
     <table class="table table-sm">
       <thead>
         <tr>
@@ -388,37 +385,6 @@
         <!-- API keys will be loaded here -->
       </tbody>
     </table>
-  </div>
-  
-  <!-- Create API Token Modal -->
-  <div class="modal fade" id="createApiTokenModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <form class="modal-content" id="createApiTokenForm" onsubmit="submitCreateApiToken(event)">
-        <div class="modal-header">
-          <h5 class="modal-title">Create API Token</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="apiChatbotSelect" class="form-label">Chatbot</label>
-            <select id="apiChatbotSelect" class="form-select" required>
-              <!-- Chatbots will be populated here -->
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="apiVendorDomain" class="form-label">Vendor Domain</label>
-            <input type="text" id="apiVendorDomain" class="form-control" value="" required>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Create Token</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        </div>
-      </form>
-    </div>
   </div>
 
 

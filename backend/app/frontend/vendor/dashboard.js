@@ -192,8 +192,7 @@ async function showChatbotDetails(chatbotId) {
 
   // ------------------ Widget script (shown as text, not executed) ------------------
   const widgetScript = `<script 
-    src="https://rocky-liver-taste-connectivity.trycloudflare.com/static/widget.js" 
-    data-chatbot="${data.id}" 
+    src="https://cabin-allocated-accidents-examined.trycloudflare.com/static/widget.js" 
     data-chatbot-name="${data.name}" 
     data-chatbot-token="${tokenHash}">
   </script>`;
@@ -273,7 +272,6 @@ async function loadChatbotDocuments(chatbotId) {
   }
 }
 
-
 // ------------------ ChatbotsDetails Document Upload ------------------
 
 // Render selected files in details page
@@ -328,10 +326,6 @@ async function uploadDocumentsForDetail() {
   }
 }
 
-
-
-
-
 // Open Chat
 function openChat(chatbotId, chatbotName) {
   const chatWindow = document.getElementById("chatWindow");
@@ -361,7 +355,7 @@ async function sendMessage() {
   // --- Display user message ---
   const userMsgDiv = document.createElement("div");
   userMsgDiv.classList.add("chat-message", "user");
-  userMsgDiv.innerHTML = `<strong>User:</strong> ${message}`;
+  userMsgDiv.innerHTML = `${message}`;
   chatMessages.appendChild(userMsgDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -374,7 +368,7 @@ async function sendMessage() {
     if (sessionId) body.session_id = sessionId;
 
     // Send request to multi-turn backend
-    const res = await fetch(`${API_BASE}/chatbots/${currentChatbotId}/chat`, {
+    const res = await fetch(`${API_BASE}/chatbots/test/${currentChatbotId}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -394,14 +388,14 @@ async function sendMessage() {
     // --- Display bot response ---
     const botMsgDiv = document.createElement("div");
     botMsgDiv.classList.add("chat-message", "bot");
-    botMsgDiv.innerHTML = `<strong>Bot:</strong> ${data.answer}`;
+    botMsgDiv.innerHTML = `${data.answer}`;
     chatMessages.appendChild(botMsgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
   } catch (err) {
     const errDiv = document.createElement("div");
     errDiv.classList.add("chat-message", "bot");
-    errDiv.innerHTML = `<strong>Bot:</strong> Error: ${err.message}`;
+    errDiv.innerHTML = `Error: ${err.message}`;
     chatMessages.appendChild(errDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   } finally {
@@ -409,7 +403,6 @@ async function sendMessage() {
     input.focus();
   }
 }
-
 
 // ------------------ Documents ------------------
 async function loadDocuments() {
@@ -515,7 +508,6 @@ function renderSelectedFiles() {
   });
 }
 
-
 // ------------------ Upload ------------------
 async function uploadDocuments() {
   if (!selectedNewFiles.length) return alert("Select files first");
@@ -551,8 +543,6 @@ async function uploadDocuments() {
   }
 }
 
-
-
 // ------------------ Delete Document ------------------
 async function deleteDocument(id, btn) {
   await fetch(`${API_BASE}/documents/${id}`, {
@@ -564,13 +554,12 @@ async function deleteDocument(id, btn) {
 
 // ------------------ API Tokens ------------------
 async function loadAPITokens() {
-  showSection("apiTokens"); // Show the API Tokens section
+  showSection("apiTokens"); 
 
   const container = document.getElementById("apiTokensList");
   container.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
 
   try {
-    // Fetch API keys for this vendor
     const res = await fetch(`${API_BASE}/api-keys/list_of_keys`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -581,7 +570,6 @@ async function loadAPITokens() {
       return;
     }
 
-    // Fetch all chatbots to map chatbot_id -> chatbot name
     const botsRes = await fetch(`${API_BASE}/chatbots/`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -589,7 +577,6 @@ async function loadAPITokens() {
     const chatbotMap = {};
     bots.forEach(b => chatbotMap[b.id] = b.name);
 
-    // Render table rows
     container.innerHTML = keys.map(k => `
       <tr>
         <td>${chatbotMap[k.chatbot_id] || "N/A"}</td>
@@ -622,87 +609,6 @@ async function loadAPITokens() {
     container.innerHTML = "<tr><td colspan='5' style='color:red;'>Failed to load API tokens</td></tr>";
   }
 }
-
-// Show the modal and populate chatbot dropdown
-async function showCreateApiTokenModal() {
-  // Fetch chatbots for this vendor
-  const select = document.getElementById("apiChatbotSelect");
-  select.innerHTML = "<option value=''>Loading...</option>";
-
-  try {
-    const res = await fetch(`${API_BASE}/chatbots/`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const bots = await res.json();
-
-    select.innerHTML = ""; // clear
-
-    bots.forEach(b => {
-      const option = document.createElement("option");
-      option.value = b.id;
-      option.textContent = b.name;
-      select.appendChild(option);
-    });
-
-    // Set vendor domain field
-    document.getElementById("apiVendorDomain").value = currentVendor.domain || "";
-
-    // Show modal
-    const modalEl = document.getElementById("createApiTokenModal");
-    const modal = new bootstrap.Modal(modalEl);
-    modal.show();
-
-  } catch (err) {
-    alert("Failed to load chatbots: " + err.message);
-  }
-}
-
-// Submit form to create API token
-async function submitCreateApiToken(event) {
-  event.preventDefault();
-
-  const chatbotId = parseInt(document.getElementById("apiChatbotSelect").value);
-  const vendorDomain = document.getElementById("apiVendorDomain").value.trim();
-
-  if (!chatbotId || !vendorDomain) return alert("Fill all fields");
-
-  // Include vendor_id from the current logged-in vendor
-  const payload = {
-    vendor_id: currentVendor.id,  // << Added this
-    chatbot_id: chatbotId,
-    vendor_domain: vendorDomain
-  };
-
-  try {
-    const res = await fetch(`${API_BASE}/api-keys/create_api_key`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` 
-      },
-      body: JSON.stringify(payload) // << send complete payload
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.detail || JSON.stringify(errData));
-    }
-
-    const data = await res.json();
-    alert(`API Token created!\nToken: ${data.token}`);
-
-    // Close modal
-    bootstrap.Modal.getInstance(document.getElementById("createApiTokenModal")).hide();
-
-    // Reload API tokens table
-    loadAPITokens();
-
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
-}
-
-
 
 // ------------------ Analytics ------------------
 async function loadVendorUsers() {
