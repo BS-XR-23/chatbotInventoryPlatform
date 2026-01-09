@@ -9,6 +9,8 @@ from modules.chatbots.models.chatmodel import ChatRequest, ChatResponse
 from modules.vendors.models.vendor_model import Vendor
 from modules.admins.models.admin_model import Admin
 from modules.users.models.user_model import User
+from modules.chatbots.models.chatbot_model import Chatbot
+from modules.api_keys.models.api_model import APIKey
 from core.enums import VectorStoreType, UserRole
 from modules.auth.vendors.auth_vendor import get_current_vendor
 from modules.auth.admins.auth_admin import get_current_admin
@@ -124,17 +126,24 @@ def delete_chatbot(chatbot_id: int, db: Session = Depends(get_db), current_admin
         raise HTTPException(status_code=404, detail="Chatbot not found")
     return {"detail": "Chatbot deleted successfully"}
 
-@router.post("/{chatbot_id}/{token}/ask", response_model=ChatResponse)
+@router.post("/{token}/ask", response_model=ChatResponse)
 def chatbot_interaction_user_singleturn(
-    chatbot_id: int,
     token: str,
     request: ChatRequest,
     db: Session = Depends(get_db),
 ):
+    api_key = db.query(APIKey).filter(APIKey.token_hash == token, APIKey.status == "active").first()
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Invalid API token")
+    
+    chatbot = db.query(Chatbot).filter(Chatbot.id == api_key.chatbot_id).first()
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+
     ai_reply = chatbot_service.handle_conversation_singleturn(
         db=db,
         question=request.question,
-        chatbot_id=chatbot_id,
+        chatbot_id=chatbot.id,
         token=token
     )
     return ChatResponse(
@@ -142,20 +151,27 @@ def chatbot_interaction_user_singleturn(
     session_id=None
     )
 
-@router.post("/{chatbot_id}/{token}/chat", response_model=ChatResponse)
+@router.post("/{token}/chat", response_model=ChatResponse)
 def chatbot_interaction_multiturn(
-    chatbot_id: int,
     token: str,
     request: ChatRequest,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional), 
 ):
+    api_key = db.query(APIKey).filter(APIKey.token_hash == token, APIKey.status == "active").first()
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Invalid API token")
+    
+    chatbot = db.query(Chatbot).filter(Chatbot.id == api_key.chatbot_id).first()
+    if not chatbot:
+        raise HTTPException(status_code=404, detail="Chatbot not found")
+
     session_id = request.session_id or str(uuid4())
 
     ai_text = chatbot_service.handle_conversation_multiturn(
         db=db,
         question=request.question,
-        chatbot_id=chatbot_id,
+        chatbot_id=chatbot.id,
         session_id=session_id,
         user=current_user, 
         token=token 
@@ -166,7 +182,7 @@ def chatbot_interaction_multiturn(
         session_id=session_id
     )
 
-@router.post("/{chatbot_id}/chat", response_model=ChatResponse)
+@router.post("/test/{chatbot_id}/chat", response_model=ChatResponse)
 def test_chatbot_interaction_multiturn(
     chatbot_id: int,
     request: ChatRequest,

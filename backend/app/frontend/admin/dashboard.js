@@ -500,6 +500,20 @@ async function loadVendors() {
       vendorSelectUpload.appendChild(option);
     });
   }
+  // Populate vendor dropdown for Admin Token create
+  const adminApiVendorSelect = document.getElementById("adminApiVendorSelect");
+if (adminApiVendorSelect) {
+  adminApiVendorSelect.innerHTML =
+    '<option value="">-- Select Vendor --</option>';
+
+  vendors.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.id;
+    opt.textContent = v.name;
+    adminApiVendorSelect.appendChild(opt);
+  });
+}
+
 
   // ---------------------------
   // Optional: Most users vendor (commented)
@@ -1174,6 +1188,150 @@ async function submitPasswordForm(event) {
     alert(`Error: ${err.message}`);
   }
 }
+
+
+/* ===================== API Tokens ===================== */
+async function loadAdminApiTokens(vendorId) {
+  if (!vendorId) return;
+
+  showSection("adminApiTokens");
+
+  const tbody = document.getElementById("adminApiTokensList");
+  tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+
+  const res = await fetch(
+    `${API_BASE}/api-keys/by-vendor/${vendorId}`,
+    { headers }
+  );
+
+  const keys = await res.json();
+
+  if (!keys.length) {
+    tbody.innerHTML = "<tr><td colspan='5'>No API tokens</td></tr>";
+    return;
+  }
+
+  tbody.innerHTML = keys.map(k => `
+    <tr>
+      <td>${k.chatbot_id}</td>
+      <td>${k.vendor_domain}</td>
+      <td>
+        <input class="form-control form-control-sm" value="${k.token_hash}" readonly>
+        <button 
+          class="btn btn-sm btn-outline-primary mt-1" 
+          onclick="
+            const btn = this;
+            navigator.clipboard.writeText('${k.token_hash}').then(() => {
+              const original = btn.textContent;
+              btn.textContent = 'Copied';
+              setTimeout(() => btn.textContent = original, 1500);
+            });
+          "
+        >
+          Copy
+        </button>
+      </td>
+      <td>${k.status}</td>
+      <td>${new Date(k.created_at).toLocaleString()}</td>
+    </tr>
+  `).join("");
+}
+
+async function showAdminCreateApiTokenModal() {
+  const vendorId = document.getElementById("adminApiVendorSelect").value;
+
+  if (!vendorId) {
+    alert("Please select a vendor first");
+    return;
+  }
+
+  const chatbotSelect = document.getElementById("adminApiChatbotSelect");
+  chatbotSelect.innerHTML = "<option value=''>Loading chatbots...</option>";
+
+  try {
+    // Use your existing route
+    const res = await fetch(
+      `${API_BASE}/chatbots/vendor_chatbots_for_user/${vendorId}`,
+      { headers }
+    );
+
+    const bots = await res.json();
+
+    chatbotSelect.innerHTML = "<option value=''>-- Select Chatbot --</option>";
+
+    if (!bots.length) {
+      chatbotSelect.innerHTML = "<option value=''>No chatbots found</option>";
+    } else {
+      bots.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;          // chatbot_id
+        opt.textContent = b.name;  // visible label
+        chatbotSelect.appendChild(opt);
+      });
+    }
+
+    // reset domain field
+    document.getElementById("adminApiVendorDomain").value = "";
+
+    // Show modal
+    const modal = new bootstrap.Modal(
+      document.getElementById("adminCreateApiTokenModal")
+    );
+    modal.show();
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load chatbots");
+  }
+}
+
+
+
+async function submitAdminCreateApiToken(e) {
+  e.preventDefault();
+
+  const vendorId = parseInt(
+    document.getElementById("adminApiVendorSelect").value
+  );
+
+ const chatbotId = parseInt(
+  document.getElementById("adminApiChatbotSelect").value
+);
+
+  const domain = document.getElementById("adminApiVendorDomain").value.trim();
+
+  const res = await fetch(
+    `${API_BASE}/api-keys/create`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers
+      },
+      body: JSON.stringify({
+        vendor_id: vendorId,
+        chatbot_id: chatbotId,
+        vendor_domain: domain
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert(err.detail || "Failed to create API token");
+    return;
+  }
+
+  const data = await res.json();
+  alert(`API Token Created:\n${data.token}`);
+
+  bootstrap.Modal
+    .getInstance(document.getElementById("adminCreateApiTokenModal"))
+    .hide();
+
+  loadAdminApiTokens(vendorId);
+}
+
 
 // Function to set active sidebar button
 function setActiveSidebar(button) {
