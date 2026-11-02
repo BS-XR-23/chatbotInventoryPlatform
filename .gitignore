@@ -17,11 +17,10 @@ chatbotEnv/
 # =========================
 # Environment variables
 # =========================
+# Matches at any depth; only the .env.example templates are tracked
 .env
-backend/app/.env
-
-# If you later want to ignore ALL .env files everywhere, use this instead:
-# **/.env
+.env.*
+!.env.example
 
 # =========================
 # Node / Frontend
